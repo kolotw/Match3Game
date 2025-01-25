@@ -10,19 +10,62 @@ namespace Match3Game
         private GameObject highlightPrefab;
         private List<GameObject> highlights = new List<GameObject>();
         private int currentMatchIndex = 0;
+        private float timer = 0f;
+        private const float HINT_DELAY = 3f;
+        private bool isMouseDown = false;
+        private bool isResetting = false;
 
         void Start()
         {
             board = Board.instance;
             highlightPrefab = Resources.Load<GameObject>("Highlight");
-            InvokeRepeating("ShowPossibleMatches", 1f, 4f);
+        }
+
+        void Update()
+        {
+            if (isResetting) return;
+
+            if (Input.GetMouseButtonDown(0))
+            {
+                isMouseDown = true;
+                StopTimer();
+            }
+            else if (Input.GetMouseButtonUp(0))
+            {
+                isMouseDown = false;
+                StopTimer();
+            }
+
+            if (!isMouseDown && board.hasMoveCompleted)
+            {
+                timer += Time.deltaTime;
+                if (timer >= HINT_DELAY)
+                {
+                    ShowPossibleMatches();
+                    timer = 0f;
+                }
+            }
+        }
+
+        public void StopTimer()
+        {
+            timer = 0f;
+            ClearHighlights();
         }
 
         void ShowPossibleMatches()
         {
+            if (isResetting) return;
+
             ClearHighlights();
             List<PossibleMatch> matches = FindPossibleMatches();
-            if (matches.Count == 0) return;
+
+            if (matches.Count == 0)
+            {
+                Debug.Log("NO Move");
+                StartCoroutine(ResetBoard());
+                return;
+            }
 
             currentMatchIndex = (currentMatchIndex + 1) % matches.Count;
             var match = matches[currentMatchIndex];
@@ -37,11 +80,37 @@ namespace Match3Game
             ClearHighlights();
         }
 
+        private IEnumerator ResetBoard()
+        {
+            isResetting = true;
+
+            // 收集所有寶石
+            List<Gem> allGems = new List<Gem>();
+            for (int x = 0; x < board.width; x++)
+            {
+                for (int y = board.height; y >= 0; y--)
+                {
+                    var gem = board.GetGem(x, y);
+                    if (gem != null)
+                    {
+                        allGems.Add(gem);
+                    }
+                }
+            }
+
+            yield return StartCoroutine(board.FadeAndDestroyGems(allGems));
+
+            // 重新填滿棋盤
+            yield return StartCoroutine(board.FillEmptySpaces());
+            isResetting = false;
+            ResetPredictionTimer();
+        }
+
         public void ResetPredictionTimer()
         {
-            CancelInvoke("ShowPossibleMatches");
+            timer = 0f;
+            isMouseDown = false;
             ClearHighlights();
-            InvokeRepeating("ShowPossibleMatches", 1f, 4f);
         }
 
         void CreateHighlight(int x, int y)

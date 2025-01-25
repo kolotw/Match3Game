@@ -25,7 +25,7 @@ namespace Match3Game
 
         private void Update()
         {
-            if (!isDragging || isAnimating) return;
+            if (!isDragging || isAnimating || !Board.instance.hasMoveCompleted) return;
 
             Vector2 currentPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Vector2 dragDelta = currentPos - dragStart;
@@ -47,7 +47,7 @@ namespace Match3Game
 
         private void OnMouseDown()
         {
-            if (isAnimating) return;
+            if (isAnimating || !Board.instance.hasMoveCompleted) return;
             dragStart = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             isDragging = true;
         }

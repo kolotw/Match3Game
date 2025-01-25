@@ -14,17 +14,23 @@ namespace Match3Game
 
         private Gem[,] gems;
         [SerializeField] private MatchPredictor matchPredictor;
+        public bool hasMoveCompleted = false;
 
         private void Awake()
         {
             instance = this;
+            matchPredictor = GetComponent<MatchPredictor>();
         }
 
-        void Start()
+        public void Start()
         {
             gems = new Gem[width, height];
+            hasMoveCompleted = false;
             SetupBoard();
-            matchPredictor?.ResetPredictionTimer();
+            if (hasMoveCompleted)
+            {
+                matchPredictor?.ResetPredictionTimer();
+            }
         }
 
         public Gem GetGem(int x, int y)
@@ -42,6 +48,11 @@ namespace Match3Game
                 {
                     CreateGem(x, y);
                 }
+            }
+            hasMoveCompleted = true;
+            if (hasMoveCompleted)
+            {
+                matchPredictor?.ResetPredictionTimer();
             }
         }
 
@@ -87,13 +98,14 @@ namespace Match3Game
 
         private IEnumerator SwapGemsRoutine(int x1, int y1, int x2, int y2)
         {
+            hasMoveCompleted = false;
             Gem gem1 = gems[x1, y1];
             Gem gem2 = gems[x2, y2];
 
             gems[x1, y1] = gem2;
             gems[x2, y2] = gem1;
 
-            float swapDuration = 0.3f;
+            float swapDuration = 0.3f / gemMoveSpeed;
 
             StartCoroutine(gem1.AnimateMove(new Vector3(x2, y2, 0), swapDuration));
             StartCoroutine(gem2.AnimateMove(new Vector3(x1, y1, 0), swapDuration));
@@ -104,11 +116,14 @@ namespace Match3Game
             {
                 gems[x1, y1] = gem1;
                 gems[x2, y2] = gem2;
-
                 StartCoroutine(gem1.AnimateMove(new Vector3(x1, y1, 0), swapDuration));
                 StartCoroutine(gem2.AnimateMove(new Vector3(x2, y2, 0), swapDuration));
-
                 yield return new WaitForSeconds(swapDuration);
+                hasMoveCompleted = true;
+                if (hasMoveCompleted)
+                {
+                    matchPredictor?.ResetPredictionTimer();
+                }
             }
             else
             {
@@ -116,11 +131,9 @@ namespace Match3Game
                 gem1.y = y2;
                 gem2.x = x1;
                 gem2.y = y1;
-
                 yield return new WaitForSeconds(0.2f);
                 DestroyMatches();
             }
-            matchPredictor?.ResetPredictionTimer();
         }
 
         void CheckAllMatches()
@@ -221,8 +234,14 @@ namespace Match3Game
             StartCoroutine(FadeAndDestroyGems(matchedGems));            
         }
 
-        private IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy)
+        public IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy)
         {
+            // 先從board移除引用
+            foreach (var gem in gemsToDestroy)
+            {
+                gems[gem.x, gem.y] = null;
+            }
+
             foreach (var gem in gemsToDestroy)
             {
                 SpriteRenderer renderer = gem.GetComponent<SpriteRenderer>();
@@ -231,7 +250,7 @@ namespace Match3Game
 
                 while (alpha > 0)
                 {
-                    alpha -= Time.deltaTime * 5f;
+                    alpha -= Time.deltaTime * gemMoveSpeed * 3f;
                     renderer.color = new Color(startColor.r, startColor.g, startColor.b, alpha);
                     yield return null;
                 }
@@ -288,8 +307,11 @@ namespace Match3Game
             onComplete?.Invoke();
         }
 
-        private IEnumerator FillEmptySpaces()
+        public IEnumerator FillEmptySpaces()
         {
+            hasMoveCompleted = false;
+            matchPredictor?.StopTimer();
+
             for (int x = 0; x < width; x++)
             {
                 int dropDelay = 0;
@@ -312,75 +334,21 @@ namespace Match3Game
             }
 
             yield return new WaitForSeconds(0.3f);
-
+            
             if (CheckForMatches())
             {
                 yield return new WaitForSeconds(0.2f);
                 DestroyMatches();
             }
-            else if (!HasValidMoves())
+            else
             {
-                Debug.Log("No valid moves available!");
+                hasMoveCompleted = true;
+                if (hasMoveCompleted)
+                {
+                    matchPredictor?.ResetPredictionTimer();
+                }
             }
         }
 
-        private bool HasValidMoves()
-        {
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width - 1; x++)
-                {
-                    if (CheckSwapForMatch(x, y, x + 1, y))
-                        return true;
-                }
-            }
-
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height - 1; y++)
-                {
-                    if (CheckSwapForMatch(x, y, x, y + 1))
-                        return true;
-                }
-            }
-
-            return false;
-        }
-
-        private bool CheckSwapForMatch(int x1, int y1, int x2, int y2)
-        {
-            Gem gem1 = gems[x1, y1];
-            Gem gem2 = gems[x2, y2];
-
-            // 暫存兩個寶石的ID
-            int gem1Id = gem1.id;
-            int gem2Id = gem2.id;
-
-            // 交換位置和ID
-            gems[x1, y1] = gem2;
-            gems[x2, y2] = gem1;
-            gem1.id = gem2Id;
-            gem2.id = gem1Id;
-
-            bool hasMatch = CheckForMatches();
-
-            // 還原位置和ID
-            gems[x1, y1] = gem1;
-            gems[x2, y2] = gem2;
-            gem1.id = gem1Id;
-            gem2.id = gem2Id;
-
-            // 重置所有寶石的匹配狀態
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    if (gems[x, y] != null)
-                        gems[x, y].isMatched = false;
-                }
-            }
-
-            return hasMatch;
-        }
     }
 }

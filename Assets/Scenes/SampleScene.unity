@@ -157,7 +157,9 @@ MonoBehaviour:
   - {fileID: 181734488065570176, guid: 96b8dd25802ccc54c9ad3b7b41798882, type: 3}
   width: 5
   height: 5
-  gemMoveSpeed: 1
+  gemMoveSpeed: 3
+  matchPredictor: {fileID: 0}
+  hasMoveCompleted: 0
 --- !u!4 &258291702
 Transform:
   m_ObjectHideFlags: 0
