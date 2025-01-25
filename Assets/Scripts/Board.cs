@@ -218,6 +218,7 @@ namespace Match3Game
         void DestroyMatches()
         {
             List<Gem> matchedGems = new List<Gem>();
+            Dictionary<int, int> idCounts = new Dictionary<int, int>();
 
             for (int x = 0; x < width; x++)
             {
@@ -226,12 +227,24 @@ namespace Match3Game
                     if (gems[x, y] != null && gems[x, y].isMatched)
                     {
                         matchedGems.Add(gems[x, y]);
+                        int gemId = gems[x, y].id;
+
+                        if (!idCounts.ContainsKey(gemId))
+                            idCounts[gemId] = 0;
+                        idCounts[gemId]++;
+
                         gems[x, y] = null;
                     }
                 }
             }
 
-            StartCoroutine(FadeAndDestroyGems(matchedGems));            
+            foreach (var pair in idCounts)
+            {
+                Debug.Log($"id {pair.Key}: {pair.Value} 個寶石被消除");
+            }
+            Debug.Log($"總共 {matchedGems.Count} 個寶石被消除");
+
+            StartCoroutine(FadeAndDestroyGems(matchedGems));
         }
 
         public IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy)
@@ -333,11 +346,11 @@ namespace Match3Game
                 }
             }
 
-            yield return new WaitForSeconds(0.3f);
+            yield return new WaitForSeconds(0.1f);
             
             if (CheckForMatches())
             {
-                yield return new WaitForSeconds(0.2f);
+                yield return new WaitForSeconds(0.1f);
                 DestroyMatches();
             }
             else

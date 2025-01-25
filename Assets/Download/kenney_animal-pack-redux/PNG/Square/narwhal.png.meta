@@ -160,7 +160,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      narwhal_0: 4915676729229503984
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

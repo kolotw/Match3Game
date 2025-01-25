@@ -156,7 +156,7 @@ MonoBehaviour:
   - {fileID: 7765567096553612514, guid: 1112835ce817b994d9ee9c5a05fd9af3, type: 3}
   - {fileID: 181734488065570176, guid: 96b8dd25802ccc54c9ad3b7b41798882, type: 3}
   width: 5
-  height: 5
+  height: 8
   gemMoveSpeed: 3
   matchPredictor: {fileID: 0}
   hasMoveCompleted: 0
@@ -318,7 +318,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2, y: 2, z: -10}
+  m_LocalPosition: {x: 2, y: 3.5, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

@@ -160,7 +160,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Res_star_Rainbown_0: 2590385114891334438
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
