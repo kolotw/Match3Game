@@ -13,6 +13,7 @@ namespace Match3Game
         public float gemMoveSpeed = 5f;
 
         private Gem[,] gems;
+        [SerializeField] private MatchPredictor matchPredictor;
 
         private void Awake()
         {
@@ -23,6 +24,7 @@ namespace Match3Game
         {
             gems = new Gem[width, height];
             SetupBoard();
+            matchPredictor?.ResetPredictionTimer();
         }
 
         public Gem GetGem(int x, int y)
@@ -118,6 +120,7 @@ namespace Match3Game
                 yield return new WaitForSeconds(0.2f);
                 DestroyMatches();
             }
+            matchPredictor?.ResetPredictionTimer();
         }
 
         void CheckAllMatches()
@@ -141,7 +144,7 @@ namespace Match3Game
             }
         }
 
-        bool CheckHorizontalMatch(int x, int y)
+        public bool CheckHorizontalMatch(int x, int y)
         {
             if (gems[x, y] == null) return false;
 
@@ -159,7 +162,7 @@ namespace Match3Game
             return false;
         }
 
-        bool CheckVerticalMatch(int x, int y)
+        public bool CheckVerticalMatch(int x, int y)
         {
             if (gems[x, y] == null) return false;
 
@@ -177,7 +180,7 @@ namespace Match3Game
             return false;
         }
 
-        bool CheckForMatches()
+        public bool CheckForMatches()
         {
             bool hasMatches = false;
             CheckAllMatches();
@@ -215,7 +218,7 @@ namespace Match3Game
                 }
             }
 
-            StartCoroutine(FadeAndDestroyGems(matchedGems));
+            StartCoroutine(FadeAndDestroyGems(matchedGems));            
         }
 
         private IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy)
