@@ -27,10 +27,16 @@ namespace Match3Game
 
         private void Update()
         {
-            if (!isDragging || isAnimating || !Board.instance.hasMoveCompleted) return;
+            if (!isDragging || isAnimating || !Board.instance.hasMoveCompleted)
+            {
+                return;
+            }
 
             Vector2 currentPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Vector2 dragDelta = currentPos - dragStart;
+
+            // 增加詳細的 Debug 日誌
+            //Debug.Log($"Drag Delta: {dragDelta}, Magnitude: {dragDelta.magnitude}");
 
             if (dragDelta.magnitude < MIN_DRAG_DISTANCE) return;
 
@@ -71,7 +77,10 @@ namespace Match3Game
         {
             if (targetPos.x < 0 || targetPos.x >= Board.instance.width ||
                 targetPos.y < 0 || targetPos.y >= Board.instance.height)
+            {
+                isAnimating = false; 
                 return;
+            }
 
             isAnimating = true;
 
@@ -94,13 +103,14 @@ namespace Match3Game
             yield return new WaitForSeconds(0.3f / Board.instance.gemMoveSpeed);
 
             // 移動完後觸發效果
-            Board.instance.ActivateResourceGem(this);
+            Board.instance.specialGemActivator.ActivateSpecialGem(this);
         }
         public IEnumerator AnimateMove(Vector3 target, float duration)
         {
             Vector3 start = transform.position;
             float elapsed = 0;
 
+            isAnimating = true;  // 確保動畫開始時設置
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
@@ -110,7 +120,7 @@ namespace Match3Game
             }
 
             transform.position = target;
-            isAnimating = false;
+            isAnimating = false;  // 動畫結束時重置
         }
     }
 }
