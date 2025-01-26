@@ -152,7 +152,7 @@ namespace Match3Game
                 gem2.x = x1;
                 gem2.y = y1;
                 yield return new WaitForSeconds(0.2f);
-                DestroyMatches();
+                DestroyMatches(true, x2, y2); // 標記為互動產生，傳入互動位置
             }
         }
 
@@ -235,7 +235,7 @@ namespace Match3Game
             return hasMatches;
         }
 
-        void DestroyMatches()
+        void DestroyMatches(bool isFromInteraction = false, int interactX = -1, int interactY = -1)
         {
             List<Gem> matchedGems = new List<Gem>();
             Dictionary<int, int> idCounts = new Dictionary<int, int>();
@@ -258,16 +258,59 @@ namespace Match3Game
                 }
             }
 
-            foreach (var pair in idCounts)
-            {
-                //Debug.Log($"id {pair.Key}: {pair.Value} 個寶石被消除");                
-            }
-            //Debug.Log($"總共 {matchedGems.Count} 個寶石被消除");
-
             StartCoroutine(FadeAndDestroyGems(matchedGems));
-            CheckSpecialMatch(matchedGems);
+            CheckSpecialMatch(matchedGems, isFromInteraction, interactX, interactY);
         }
+        private void CheckSpecialMatch(List<Gem> matchedGems, bool isFromInteraction, int interactX = -1, int interactY = -1)
+        {
+            var groups = matchedGems.GroupBy(g => g.id);
 
+            foreach (var group in groups)
+            {
+                var gems = group.ToList();
+                if (gems.Count < 4) continue;
+
+                // 決定創建位置
+                int createX, createY;
+                if (isFromInteraction)
+                {
+                    // 從互動產生時，使用互動位置
+                    createX = interactX;
+                    createY = interactY;
+                }
+                else
+                {
+                    // 從落下產生時，使用第一個位置
+                    createX = gems[0].x;
+                    createY = gems[0].y;
+                }
+
+                if (gems.Count >= 5)
+                {
+                    CreateResourceGem(createX, createY, 3); // Bomb
+                    continue;
+                }
+
+                if (gems.Count == 4)
+                {
+                    bool isHorizontal = gems.All(g => g.y == gems[0].y);
+                    bool isVertical = gems.All(g => g.x == gems[0].x);
+
+                    if (isHorizontal && isVertical)
+                    {
+                        CreateResourceGem(createX, createY, 2); // Cross
+                    }
+                    else if (isHorizontal)
+                    {
+                        CreateResourceGem(createX, createY, 0); // LineH
+                    }
+                    else if (isVertical)
+                    {
+                        CreateResourceGem(createX, createY, 1); // LineV
+                    }
+                }
+            }
+        }
         public IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy)
         {
             // 先從board移除引用
@@ -355,12 +398,10 @@ namespace Match3Game
                     {
                         CreateGem(x, y);
                         gems[x, y].transform.position = new Vector3(x, height + dropDelay, 0);
-
                         StartCoroutine(gems[x, y].AnimateMove(
                             new Vector3(x, y, 0),
                             0.3f / gemMoveSpeed
                         ));
-
                         dropDelay++;
                         yield return new WaitForSeconds(0.1f);
                     }
@@ -372,7 +413,7 @@ namespace Match3Game
             if (CheckForMatches())
             {
                 yield return new WaitForSeconds(0.1f);
-                DestroyMatches();
+                DestroyMatches(false); // 改為 false，表示不是從互動產生
             }
             else
             {
@@ -383,41 +424,7 @@ namespace Match3Game
                 }
             }
         }
-        private void CheckSpecialMatch(List<Gem> matchedGems)
-        {
-            var groups = matchedGems.GroupBy(g => g.id);
-
-            foreach (var group in groups)
-            {
-                var gems = group.ToList();
-                if (gems.Count < 4) continue;
-
-                if (gems.Count >= 5)
-                {
-                    CreateResourceGem(gems[0].x, gems[0].y, 3); // Bomb
-                    continue;
-                }
-
-                if (gems.Count == 4)
-                {
-                    bool isHorizontal = gems.All(g => g.y == gems[0].y);
-                    bool isVertical = gems.All(g => g.x == gems[0].x);
-
-                    if (isHorizontal && isVertical)
-                    {
-                        CreateResourceGem(gems[0].x, gems[0].y, 2); // Cross
-                    }
-                    else if (isHorizontal)
-                    {
-                        CreateResourceGem(gems[0].x, gems[0].y, 0); // LineH
-                    }
-                    else if (isVertical)
-                    {
-                        CreateResourceGem(gems[0].x, gems[0].y, 1); // LineV
-                    }
-                }
-            }
-        }
+        
         private void CreateResourceGem(int x, int y, int resType)
         {
             GameObject gemObj = Instantiate(resGemPrefabs[resType], transform);
