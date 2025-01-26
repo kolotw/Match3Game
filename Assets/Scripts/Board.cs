@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using static UnityEditor.Searcher.SearcherWindow.Alignment;
 
 namespace Match3Game
 {
@@ -256,30 +257,42 @@ namespace Match3Game
                 var gems = group.Value;
                 if (gems.Count >= 4)
                 {
-                    // 判斷是水平還是垂直配對
-                    bool isHorizontal = gems.All(g => g.y == gems[0].y);
-                    bool isVertical = gems.All(g => g.x == gems[0].x);
-
                     int createX, createY;
-                    if (isHorizontal)
+                    bool isHorizontal = false;
+                    bool isVertical = false;
+
+                    // 判斷是水平還是垂直配對
+                    isHorizontal = gems.All(g => g.y == gems[0].y);
+                    isVertical = gems.All(g => g.x == gems[0].x);
+
+                    // 優先使用互動的觸發點
+                    if (isFromInteraction)
                     {
-                        // 對於水平配對，取X座標的中間值
-                        var orderedGems = gems.OrderBy(g => g.x).ToList();
-                        createX = orderedGems[orderedGems.Count / 2].x;
-                        createY = gems[0].y;
-                    }
-                    else if (isVertical)
-                    {
-                        // 對於垂直配對，取Y座標的中間值
-                        var orderedGems = gems.OrderBy(g => g.y).ToList();
-                        createX = gems[0].x;
-                        createY = orderedGems[orderedGems.Count / 2].y;
+                        createX = interactX;
+                        createY = interactY;
                     }
                     else
                     {
-                        // 如果既不是水平也不是垂直，使用第一個寶石的座標
-                        createX = gems[0].x;
-                        createY = gems[0].y;
+                        if (isHorizontal)
+                        {
+                            // 對於水平配對，取X座標的中間值
+                            var orderedGems = gems.OrderBy(g => g.x).ToList();
+                            createX = orderedGems[orderedGems.Count / 2].x;
+                            createY = gems[0].y;
+                        }
+                        else if (isVertical)
+                        {
+                            // 對於垂直配對，取Y座標的中間值
+                            var orderedGems = gems.OrderBy(g => g.y).ToList();
+                            createX = gems[0].x;
+                            createY = orderedGems[orderedGems.Count / 2].y;
+                        }
+                        else
+                        {
+                            // 如果既不是水平也不是垂直，使用第一個寶石的座標
+                            createX = gems[0].x;
+                            createY = gems[0].y;
+                        }
                     }
 
                     // 根據配對數量和方向決定資源寶石類型
@@ -298,6 +311,11 @@ namespace Match3Game
                     else if (isVertical)
                     {
                         CreateResourceGem(createX, createY, 1); // LineV
+                    }
+                    // 確保4個寶石的配對也會生成資源寶石
+                    else if (gems.Count == 4)
+                    {
+                        CreateResourceGem(createX, createY, 0); // 預設為橫線
                     }
                 }
             }
