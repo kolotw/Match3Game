@@ -130,7 +130,6 @@ GameObject:
   - component: {fileID: 258291702}
   - component: {fileID: 258291701}
   - component: {fileID: 258291703}
-  - component: {fileID: 258291704}
   m_Layer: 0
   m_Name: Board
   m_TagString: Untagged
@@ -155,7 +154,6 @@ MonoBehaviour:
   - {fileID: 6396109961415817149, guid: 5d550a3750f0e334b94f52e8b95d22d1, type: 3}
   - {fileID: 2038196581494960673, guid: 42db343d095a7bc449566dcca1c7297b, type: 3}
   - {fileID: 7765567096553612514, guid: 1112835ce817b994d9ee9c5a05fd9af3, type: 3}
-  - {fileID: 181734488065570176, guid: 96b8dd25802ccc54c9ad3b7b41798882, type: 3}
   resGemPrefabs:
   - {fileID: 8466207186695394168, guid: 5c7624df17977be45924a5c9ad1e81d0, type: 3}
   - {fileID: 4334207860041640017, guid: b6895930c7df7114d9cfef85c4261c74, type: 3}
@@ -193,22 +191,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec4d13dfbe357ce4291fc2dfdf8ed983, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &258291704
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258291700}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c7c20f92af7ddb04eae24b71850e82c9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  lineHSprite: {fileID: -7588639812390388627, guid: 7493dd09d3dfd744595c735df594971e, type: 3}
-  lineVSprite: {fileID: 5643102287575649618, guid: d63f321a0105ab14e820a8343bca4771, type: 3}
-  crossSprite: {fileID: 6363766480513172869, guid: 4fce5e5731004354ca1acc83dbdaf18d, type: 3}
-  bombSprite: {fileID: 7347493672508247292, guid: 800402b505816ac42b40c1a1157ee00c, type: 3}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -445,7 +427,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1246599600
 Transform:
   m_ObjectHideFlags: 0
@@ -752,6 +734,10 @@ PrefabInstance:
     - target: {fileID: 6862631087222069332, guid: 5c7624df17977be45924a5c9ad1e81d0, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7572417584310248114, guid: 5c7624df17977be45924a5c9ad1e81d0, type: 3}
+      propertyPath: id
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 8466207186695394168, guid: 5c7624df17977be45924a5c9ad1e81d0, type: 3}
       propertyPath: m_Name
