@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.UI;
 
 namespace Match3Game
 {
@@ -9,15 +10,29 @@ namespace Match3Game
     {
         public static Board instance;
         public GameObject[] gemPrefabs;
-        public GameObject[] resGemPrefabs;  // 資源寶石prefabs [LineH, LineV, Cross, Bomb]
-
+        public GameObject[] resGemPrefabs;
         public int width = 8;
         public int height = 8;
         public float gemMoveSpeed = 5f;
-
         private Gem[,] gems;
         [SerializeField] private MatchPredictor matchPredictor;
         public bool hasMoveCompleted = false;
+        [SerializeField] private Text statusText;
+        [SerializeField] private Text gemsText;
+        private bool isSwitching = false;
+        private Gem gem1, gem2;
+        private const float SWAP_DURATION = 0.3f;
+        private const float DESTROY_DELAY = 0.2f;
+        private const float COLLECT_DELAY = 0.01f;
+        private const float COMPLETE_DELAY = 0.1f;
+
+        private class MatchInfo
+        {
+            public List<Gem> matchedGems = new List<Gem>();
+            public bool isHorizontal;
+            public bool isVertical;
+            public int matchCount => matchedGems.Count;
+        }
 
         private void Awake()
         {
@@ -29,11 +44,19 @@ namespace Match3Game
         {
             gems = new Gem[width, height];
             hasMoveCompleted = false;
+            statusText.text = "進行中";
+            matchPredictor?.StopTimer();
             SetupBoard();
             if (hasMoveCompleted)
             {
+                statusText.text = "可遊玩";
                 matchPredictor?.ResetPredictionTimer();
             }
+        }
+
+        private void Update()
+        {
+            gemsText.text = "Gems: " + transform.childCount;
         }
 
         public Gem GetGem(int x, int y)
@@ -53,24 +76,19 @@ namespace Match3Game
                 }
             }
             hasMoveCompleted = true;
-            if (hasMoveCompleted)
-            {
-                matchPredictor?.ResetPredictionTimer();
-            }
+            statusText.text = "可遊玩";
+            matchPredictor?.ResetPredictionTimer();
         }
 
         void CreateGem(int x, int y)
         {
             int gemId = Random.Range(0, gemPrefabs.Length);
-
             while (IsGemMatchingAtPosition(gemId, x, y))
             {
                 gemId = Random.Range(0, gemPrefabs.Length);
             }
-
             GameObject gemObj = Instantiate(gemPrefabs[gemId], transform);
             Gem gem = gemObj.GetComponent<Gem>();
-
             gem.Init(gemId, x, y);
             gems[x, y] = gem;
         }
@@ -83,14 +101,12 @@ namespace Match3Game
                     gems[x - 1, y].id == gemId && gems[x - 2, y].id == gemId)
                     return true;
             }
-
             if (y > 1)
             {
                 if (gems[x, y - 1] != null && gems[x, y - 2] != null &&
                     gems[x, y - 1].id == gemId && gems[x, y - 2].id == gemId)
                     return true;
             }
-
             return false;
         }
 
@@ -102,37 +118,43 @@ namespace Match3Game
         private IEnumerator SwapGemsRoutine(int x1, int y1, int x2, int y2)
         {
             hasMoveCompleted = false;
-            Gem gem1 = gems[x1, y1];
-            Gem gem2 = gems[x2, y2];
-
+            statusText.text = "交換中";
+            isSwitching = true;
+            gem1 = gems[x1, y1];
+            gem2 = gems[x2, y2];
             gems[x1, y1] = gem2;
             gems[x2, y2] = gem1;
 
-            float swapDuration = 0.3f / gemMoveSpeed;
-
+            float swapDuration = SWAP_DURATION / gemMoveSpeed;
             StartCoroutine(gem1.AnimateMove(new Vector3(x2, y2, 0), swapDuration));
             StartCoroutine(gem2.AnimateMove(new Vector3(x1, y1, 0), swapDuration));
-
             yield return new WaitForSeconds(swapDuration);
 
-            // 如果是資源寶石且不是Bomb，直接在新位置觸發效果
-            if (gem1.id >= 100 && gem1.id != 103)
+            gem1.x = x2;
+            gem1.y = y2;
+            gem2.x = x1;
+            gem2.y = y1;
+
+            bool hasMatches = CheckForMatches();
+            if (gem1.id == 103 || gem2.id == 103) // Bomb直接觸發
             {
-                gem1.x = x2;
-                gem1.y = y2;
-                gem2.x = x1;
-                gem2.y = y1;
-                ActivateResourceGem(gem1);
+                ActivateResourceGem(gem1.id == 103 ? gem1 : gem2);
             }
-            else if (gem2.id >= 100 && gem2.id != 103)
+            else if (hasMatches)
             {
-                gem1.x = x2;
-                gem1.y = y2;
-                gem2.x = x1;
-                gem2.y = y1;
-                ActivateResourceGem(gem2);
+                yield return new WaitForSeconds(DESTROY_DELAY);
+                DestroyMatches(true, x2, y2);
+                yield return new WaitForSeconds(DESTROY_DELAY);
+                if (gem1.id >= 100 || gem2.id >= 100)
+                {
+                    ActivateResourceGem(gem1.id >= 100 ? gem1 : gem2);
+                }
             }
-            else if (!CheckForMatches())
+            else if (gem1.id >= 100 || gem2.id >= 100)
+            {
+                ActivateResourceGem(gem1.id >= 100 ? gem1 : gem2);
+            }
+            else
             {
                 gems[x1, y1] = gem1;
                 gems[x2, y2] = gem2;
@@ -140,163 +162,198 @@ namespace Match3Game
                 StartCoroutine(gem2.AnimateMove(new Vector3(x2, y2, 0), swapDuration));
                 yield return new WaitForSeconds(swapDuration);
                 hasMoveCompleted = true;
-                if (hasMoveCompleted)
-                {
-                    matchPredictor?.ResetPredictionTimer();
-                }
+                statusText.text = "可遊玩";
+                matchPredictor?.ResetPredictionTimer();
             }
-            else
-            {
-                gem1.x = x2;
-                gem1.y = y2;
-                gem2.x = x1;
-                gem2.y = y1;
-                yield return new WaitForSeconds(0.2f);
-                DestroyMatches(true, x2, y2); // 標記為互動產生，傳入互動位置
-            }
+            isSwitching = false;
         }
 
-        void CheckAllMatches()
+        private List<MatchInfo> FindAllMatches()
         {
+            List<MatchInfo> allMatches = new List<MatchInfo>();
+            bool[,] processed = new bool[width, height];
+
             // 檢查水平方向
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width - 2; x++)
                 {
-                    CheckHorizontalMatch(x, y);
+                    if (processed[x, y] || gems[x, y] == null) continue;
+
+                    MatchInfo match = CheckMatch(x, y, true);
+                    if (match != null)
+                    {
+                        foreach (var gem in match.matchedGems)
+                        {
+                            processed[gem.x, gem.y] = true;
+                        }
+                        allMatches.Add(match);
+                    }
                 }
             }
 
-            // 檢查垂直方向  
+            // 檢查垂直方向
+            processed = new bool[width, height];
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height - 2; y++)
                 {
-                    CheckVerticalMatch(x, y);
+                    if (processed[x, y] || gems[x, y] == null) continue;
+
+                    MatchInfo match = CheckMatch(x, y, false);
+                    if (match != null)
+                    {
+                        foreach (var gem in match.matchedGems)
+                        {
+                            processed[gem.x, gem.y] = true;
+                        }
+                        allMatches.Add(match);
+                    }
                 }
             }
+
+            return allMatches;
         }
 
-        public bool CheckHorizontalMatch(int x, int y)
+        private MatchInfo CheckMatch(int startX, int startY, bool horizontal)
         {
-            if (gems[x, y] == null) return false;
+            MatchInfo match = new MatchInfo();
+            int currentId = gems[startX, startY].id;
+            int x = startX, y = startY;
 
-            if (x < width - 2 &&
-                gems[x + 1, y] != null &&
-                gems[x + 2, y] != null &&
-                gems[x, y].id == gems[x + 1, y].id &&
-                gems[x + 1, y].id == gems[x + 2, y].id)
+            while (true)
             {
-                gems[x, y].isMatched = true;
-                gems[x + 1, y].isMatched = true;
-                gems[x + 2, y].isMatched = true;
-                return true;
+                if (horizontal)
+                {
+                    if (x >= width || gems[x, y] == null || gems[x, y].id != currentId)
+                        break;
+                    match.matchedGems.Add(gems[x, y]);
+                    x++;
+                }
+                else
+                {
+                    if (y >= height || gems[x, y] == null || gems[x, y].id != currentId)
+                        break;
+                    match.matchedGems.Add(gems[x, y]);
+                    y++;
+                }
             }
-            return false;
-        }
 
-        public bool CheckVerticalMatch(int x, int y)
-        {
-            if (gems[x, y] == null) return false;
-
-            if (y < height - 2 &&
-                gems[x, y + 1] != null &&
-                gems[x, y + 2] != null &&
-                gems[x, y].id == gems[x, y + 1].id &&
-                gems[x, y + 1].id == gems[x, y + 2].id)
+            if (match.matchCount >= 3)
             {
-                gems[x, y].isMatched = true;
-                gems[x, y + 1].isMatched = true;
-                gems[x, y + 2].isMatched = true;
-                return true;
+                match.isHorizontal = horizontal;
+                match.isVertical = !horizontal;
+                return match;
             }
-            return false;
+
+            return null;
         }
 
         public bool CheckForMatches()
         {
-            bool hasMatches = false;
-            CheckAllMatches();
+            if (isSwitching && (gem1.id >= 100 || gem2.id >= 100))
+                return false;
 
-            // 檢查是否有任何寶石被標記為matched
-            for (int x = 0; x < width; x++)
+            var matches = FindAllMatches();
+            foreach (var match in matches)
             {
-                for (int y = 0; y < height; y++)
+                foreach (var gem in match.matchedGems)
                 {
-                    if (gems[x, y] != null && gems[x, y].isMatched)
-                    {
-                        hasMatches = true;
-                        break;
-                    }
-                }
-                if (hasMatches) break;
-            }
-
-            return hasMatches;
-        }
-
-        void DestroyMatches(bool isFromInteraction = false, int interactX = -1, int interactY = -1)
-        {
-            List<Gem> matchedGems = new List<Gem>();
-            Dictionary<int, int> idCounts = new Dictionary<int, int>();
-
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    if (gems[x, y] != null && gems[x, y].isMatched)
-                    {
-                        matchedGems.Add(gems[x, y]);
-                        int gemId = gems[x, y].id;
-
-                        if (!idCounts.ContainsKey(gemId))
-                            idCounts[gemId] = 0;
-                        idCounts[gemId]++;
-
-                        gems[x, y] = null;
-                    }
+                    gem.isMatched = true;
                 }
             }
 
-            StartCoroutine(FadeAndDestroyGems(matchedGems));
-            CheckSpecialMatch(matchedGems, isFromInteraction, interactX, interactY);
+            return matches.Count > 0;
         }
-        private void CheckSpecialMatch(List<Gem> matchedGems, bool isFromInteraction, int interactX = -1, int interactY = -1)
+
+        private void DestroyMatches(bool isFromInteraction = false, int interactX = -1, int interactY = -1)
         {
-            var groups = matchedGems.GroupBy(g => g.id);
+            var matches = FindAllMatches();
+            List<Gem> allMatchedGems = new List<Gem>();
 
-            foreach (var group in groups)
+            foreach (var match in matches)
             {
-                var gems = group.ToList();
-                if (gems.Count < 4) continue;
+                allMatchedGems.AddRange(match.matchedGems);
+            }
 
-                // 決定創建位置
-                int createX, createY;
-                if (isFromInteraction)
-                {
-                    // 從互動產生時，使用互動位置
-                    createX = interactX;
-                    createY = interactY;
-                }
-                else
-                {
-                    // 從落下產生時，使用第一個位置
-                    createX = gems[0].x;
-                    createY = gems[0].y;
-                }
+            StartCoroutine(DestroyMatchesSequence(allMatchedGems, isFromInteraction, interactX, interactY));
+        }
+        private IEnumerator DestroyMatchesSequence(List<Gem> matchedGems, bool isFromInteraction, int interactX, int interactY)
+        {
+            HashSet<Gem> processedGems = new HashSet<Gem>();
+            List<(Gem gem, SpriteRenderer renderer, Color startColor)> fadeData = new List<(Gem, SpriteRenderer, Color)>();
+            Dictionary<int, List<Gem>> matchGroups = new Dictionary<int, List<Gem>>();
 
-                if (gems.Count >= 5)
+            // 整理要消除的寶石
+            foreach (var gem in matchedGems)
+            {
+                if (!processedGems.Contains(gem) && gem != null)
                 {
-                    CreateResourceGem(createX, createY, 3); // Bomb
-                    continue;
-                }
+                    processedGems.Add(gem);
+                    if (gems[gem.x, gem.y] == gem)
+                    {
+                        gems[gem.x, gem.y] = null;
 
-                if (gems.Count == 4)
+                        // 按ID分組以檢查特殊組合
+                        if (!matchGroups.ContainsKey(gem.id))
+                        {
+                            matchGroups[gem.id] = new List<Gem>();
+                        }
+                        matchGroups[gem.id].Add(gem);
+                    }
+
+                    // 收集漸變數據
+                    var renderer = gem.GetComponent<SpriteRenderer>();
+                    if (renderer != null)
+                    {
+                        fadeData.Add((gem, renderer, renderer.color));
+                    }
+                }
+            }
+
+            // 執行漸變
+            float alpha = 1f;
+            while (alpha > 0)
+            {
+                alpha -= Time.deltaTime * gemMoveSpeed * 3f;
+                foreach (var (gem, renderer, startColor) in fadeData)
                 {
+                    if (gem != null && gem.gameObject != null && renderer != null)
+                    {
+                        renderer.color = new Color(startColor.r, startColor.g, startColor.b, alpha);
+                    }
+                }
+                yield return null;
+            }
+
+            // 銷毀物件
+            foreach (var (gem, renderer, _) in fadeData)
+            {
+                if (gem != null && gem.gameObject != null)
+                {
+                    Destroy(gem.gameObject);
+                }
+            }
+
+            yield return new WaitForSeconds(DESTROY_DELAY);
+
+            // 檢查並生成特殊寶石
+            foreach (var group in matchGroups)
+            {
+                var gems = group.Value;
+                if (gems.Count >= 4)
+                {
+                    int createX = isFromInteraction ? interactX : gems[0].x;
+                    int createY = isFromInteraction ? interactY : gems[0].y;
+
                     bool isHorizontal = gems.All(g => g.y == gems[0].y);
                     bool isVertical = gems.All(g => g.x == gems[0].x);
 
-                    if (isHorizontal && isVertical)
+                    if (gems.Count >= 5)
+                    {
+                        CreateResourceGem(createX, createY, 3); // Bomb
+                    }
+                    else if (isHorizontal && isVertical)
                     {
                         CreateResourceGem(createX, createY, 2); // Cross
                     }
@@ -310,32 +367,47 @@ namespace Match3Game
                     }
                 }
             }
+
+            CheckAndCleanupGems();
+            yield return StartCoroutine(MakeGemsFall());
         }
         public IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy)
         {
-            // 先從board移除引用
-            foreach (var gem in gemsToDestroy)
+            var gemData = gemsToDestroy.Select(gem => new {
+                Gem = gem,
+                Renderer = gem.GetComponent<SpriteRenderer>(),
+                StartColor = gem.GetComponent<SpriteRenderer>().color
+            }).ToList();
+
+            foreach (var data in gemData)
             {
-                gems[gem.x, gem.y] = null;
+                gems[data.Gem.x, data.Gem.y] = null;
             }
 
-            foreach (var gem in gemsToDestroy)
+            foreach (var data in gemData)
             {
-                SpriteRenderer renderer = gem.GetComponent<SpriteRenderer>();
                 float alpha = 1f;
-                Color startColor = renderer.color;
-
                 while (alpha > 0)
                 {
                     alpha -= Time.deltaTime * gemMoveSpeed * 3f;
-                    renderer.color = new Color(startColor.r, startColor.g, startColor.b, alpha);
+                    if (data.Renderer != null)
+                    {
+                        data.Renderer.color = new Color(
+                            data.StartColor.r,
+                            data.StartColor.g,
+                            data.StartColor.b,
+                            alpha
+                        );
+                    }
                     yield return null;
                 }
-
-                Destroy(gem.gameObject);
+                if (data.Gem != null && data.Gem.gameObject != null)
+                {
+                    Destroy(data.Gem.gameObject);
+                }
             }
 
-            StartCoroutine(MakeGemsFall());
+            yield return StartCoroutine(MakeGemsFall());
         }
 
         private IEnumerator MakeGemsFall()
@@ -345,7 +417,6 @@ namespace Match3Game
             {
                 hasFalling = false;
                 int animatingGems = 0;
-
                 for (int x = 0; x < width; x++)
                 {
                     for (int y = 0; y < height - 1; y++)
@@ -355,14 +426,12 @@ namespace Match3Game
                             gems[x, y] = gems[x, y + 1];
                             gems[x, y + 1] = null;
                             gems[x, y].y = y;
-
                             animatingGems++;
                             StartCoroutine(WaitForGemFall(gems[x, y], x, y, () => animatingGems--));
                             hasFalling = true;
                         }
                     }
                 }
-
                 if (hasFalling)
                 {
                     while (animatingGems > 0)
@@ -386,7 +455,7 @@ namespace Match3Game
 
         public IEnumerator FillEmptySpaces()
         {
-            hasMoveCompleted = false;
+            statusText.text = "填滿中";
             matchPredictor?.StopTimer();
 
             for (int x = 0; x < width; x++)
@@ -409,27 +478,25 @@ namespace Match3Game
             }
 
             yield return new WaitForSeconds(0.1f);
-
             if (CheckForMatches())
             {
                 yield return new WaitForSeconds(0.1f);
-                DestroyMatches(false); // 改為 false，表示不是從互動產生
+                DestroyMatches(false);
             }
-            else
+            else if (!statusText.text.Equals("消除中"))
             {
                 hasMoveCompleted = true;
-                if (hasMoveCompleted)
-                {
-                    matchPredictor?.ResetPredictionTimer();
-                }
+                statusText.text = "可遊玩";
+                matchPredictor?.ResetPredictionTimer();
             }
+            CheckAndCleanupGems();
         }
-        
+
         private void CreateResourceGem(int x, int y, int resType)
         {
             GameObject gemObj = Instantiate(resGemPrefabs[resType], transform);
             Gem gem = gemObj.GetComponent<Gem>();
-            gem.Init(100 + resType, x, y); // 使用100以上的id來標識資源寶石
+            gem.Init(100 + resType, x, y);
             gems[x, y] = gem;
         }
 
@@ -440,9 +507,11 @@ namespace Match3Game
 
         private IEnumerator ActivateResourceGemSequentially(Gem gem)
         {
+            hasMoveCompleted = false;
+            matchPredictor?.StopTimer();
             int resType = gem.id - 100;
-            float delay = 0.01f;
             List<Gem> allDestroyedGems = new List<Gem>();
+            statusText.text = "消除中";
 
             switch (resType)
             {
@@ -452,7 +521,7 @@ namespace Match3Game
                         if (gems[x, gem.y] != null)
                         {
                             allDestroyedGems.Add(gems[x, gem.y]);
-                            yield return new WaitForSeconds(delay);
+                            yield return new WaitForSeconds(COLLECT_DELAY);
                         }
                     }
                     break;
@@ -463,7 +532,7 @@ namespace Match3Game
                         if (gems[gem.x, y] != null)
                         {
                             allDestroyedGems.Add(gems[gem.x, y]);
-                            yield return new WaitForSeconds(delay);
+                            yield return new WaitForSeconds(COLLECT_DELAY);
                         }
                     }
                     break;
@@ -474,7 +543,7 @@ namespace Match3Game
                         if (gems[x, gem.y] != null)
                         {
                             allDestroyedGems.Add(gems[x, gem.y]);
-                            yield return new WaitForSeconds(delay);
+                            yield return new WaitForSeconds(COLLECT_DELAY);
                         }
                     }
                     for (int y = 0; y < height; y++)
@@ -482,21 +551,55 @@ namespace Match3Game
                         if (gems[gem.x, y] != null && gems[gem.x, y] != gem)
                         {
                             allDestroyedGems.Add(gems[gem.x, y]);
-                            yield return new WaitForSeconds(delay);
+                            yield return new WaitForSeconds(COLLECT_DELAY);
                         }
                     }
                     break;
 
                 case 3: // Bomb
+                    List<Gem> bombGems = new List<Gem>();
                     for (int x = 0; x < width; x++)
                         for (int y = 0; y < height; y++)
                             if (gems[x, y] != null)
-                                allDestroyedGems.Add(gems[x, y]);
+                                bombGems.Add(gems[x, y]);
+                    foreach (var bombGem in bombGems)
+                    {
+                        allDestroyedGems.Add(bombGem);
+                        yield return new WaitForSeconds(COLLECT_DELAY);
+                    }
                     break;
             }
 
-            // 全部標記完成後，一起消除並落下
+            statusText.text = "消除中";
             yield return StartCoroutine(FadeAndDestroyGems(allDestroyedGems));
+            yield return new WaitForSeconds(COMPLETE_DELAY);
         }
+
+        private void CheckAndCleanupGems()
+        {
+            // 收集所有應該存在的寶石位置
+            HashSet<GameObject> validGems = new HashSet<GameObject>();
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    if (gems[x, y] != null)
+                    {
+                        validGems.Add(gems[x, y].gameObject);
+                    }
+                }
+            }
+
+            // 檢查並刪除不在陣列中的寶石
+            foreach (Transform child in transform)
+            {
+                if (!validGems.Contains(child.gameObject))
+                {
+                    Debug.Log("Destroying: " + child.gameObject.name);
+                    Destroy(child.gameObject);
+                }
+            }
+        }
+
     }
 }
