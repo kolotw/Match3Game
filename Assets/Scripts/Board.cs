@@ -3,7 +3,6 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using static UnityEditor.Searcher.SearcherWindow.Alignment;
 
 namespace Match3Game
 {
@@ -19,8 +18,8 @@ namespace Match3Game
         [SerializeField] public Text gemsText;
         private bool isSwitching = false;
         private Gem gem1, gem2;
-        public const float SWAP_DURATION = 0.3f;
-        public const float DESTROY_DELAY = 0.5f;
+        public const float SWAP_DURATION = 0.2f;
+        public const float DESTROY_DELAY = 0.2f;
         public const float COLLECT_DELAY = 0.01f;
         public const float COMPLETE_DELAY = 0.1f;
         public bool hasMoveCompleted = false;
@@ -115,6 +114,10 @@ namespace Match3Game
             gem2.x = x1;
             gem2.y = y1;
 
+            // 定義觸發點座標
+            int triggerX = -1;
+            int triggerY = -1;
+
             bool hasMatches = CheckForMatches();
             if (gem1.id == 103 || gem2.id == 103) // Bomb直接觸發
             {
@@ -123,8 +126,24 @@ namespace Match3Game
             else if (hasMatches)
             {
                 yield return new WaitForSeconds(DESTROY_DELAY);
-                DestroyMatches(true, x2, y2);
+
+                // 找出觸發點
+                var matches = matchFinder.FindAllMatches();
+                foreach (var match in matches)
+                {
+                    if (match.matchedGems.Any(g => g.x == x1 && g.y == y1) ||
+                        match.matchedGems.Any(g => g.x == x2 && g.y == y2))
+                    {
+                        // 如果匹配包含交換的寶石，記錄觸發點
+                        triggerX = match.matchedGems.Any(g => g.x == x1 && g.y == y1) ? x1 : x2;
+                        triggerY = match.matchedGems.Any(g => g.x == x1 && g.y == y1) ? y1 : y2;
+                        break;
+                    }
+                }
+
+                DestroyMatches(true, triggerX, triggerY);
                 yield return new WaitForSeconds(DESTROY_DELAY);
+
                 if (gem1.id >= 100 || gem2.id >= 100)
                 {
                     specialGemActivator.ActivateSpecialGem(gem1.id >= 100 ? gem1 : gem2);
@@ -150,9 +169,8 @@ namespace Match3Game
                 gem1.isAnimating = false;
                 gem2.isAnimating = false;
                 hasMoveCompleted = true;
-
                 statusText.text = "可遊玩";
-                matchPredictor?.ResetPredictionTimer();                
+                matchPredictor?.ResetPredictionTimer();
             }
             isSwitching = false;
         }
@@ -268,28 +286,30 @@ namespace Match3Game
                     // 優先使用互動的觸發點
                     if (isFromInteraction)
                     {
+                        // 調試訊息：顯示觸發點座標
+                        //Debug.Log($"觸發點座標：({interactX}, {interactY})");
+
+                        // 預設使用觸發點
                         createX = interactX;
                         createY = interactY;
                     }
                     else
                     {
+                        // 非互動觸發時的中心點邏輯
                         if (isHorizontal)
                         {
-                            // 對於水平配對，取X座標的中間值
                             var orderedGems = gems.OrderBy(g => g.x).ToList();
                             createX = orderedGems[orderedGems.Count / 2].x;
                             createY = gems[0].y;
                         }
                         else if (isVertical)
                         {
-                            // 對於垂直配對，取Y座標的中間值
                             var orderedGems = gems.OrderBy(g => g.y).ToList();
                             createX = gems[0].x;
                             createY = orderedGems[orderedGems.Count / 2].y;
                         }
                         else
                         {
-                            // 如果既不是水平也不是垂直，使用第一個寶石的座標
                             createX = gems[0].x;
                             createY = gems[0].y;
                         }
@@ -321,6 +341,7 @@ namespace Match3Game
             }
 
             yield return StartCoroutine(MakeGemsFall());
+            CheckAndCleanUnmanagedGems();
         }
         public IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy)
         {
@@ -443,7 +464,7 @@ namespace Match3Game
                 statusText.text = "可遊玩";
                 matchPredictor?.ResetPredictionTimer();
             }
-            //CheckAndCleanupGems();
+            CheckAndCleanUnmanagedGems();
         }
 
         private void CreateResourceGem(int x, int y, int resType)
@@ -454,39 +475,32 @@ namespace Match3Game
             gems[x, y] = gem;
         }
 
-        private void CheckAndCleanupGems()
+        private void CheckAndCleanUnmanagedGems()
         {
-            HashSet<GameObject> validGems = new HashSet<GameObject>();
-
-            // 只收集已經被正確放置在gems數組中的寶石
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    if (gems[x, y] != null)
-                    {
-                        validGems.Add(gems[x, y].gameObject);
-                    }
-                }
-            }
-
-            // 使用安全的方式遍歷和銷毀
-            List<Transform> childrenToDestroy = new List<Transform>();
+            // 收集棋盤上所有的子物件
+            List<Transform> childrenToCheck = new List<Transform>();
             foreach (Transform child in transform)
             {
                 Gem gemComponent = child.GetComponent<Gem>();
-                // 只銷毀有Gem組件但不在gems數組中的物件
-                if (gemComponent != null && !validGems.Contains(child.gameObject))
-                {
-                    childrenToDestroy.Add(child);
-                }
-            }
 
-            // 分開銷毀，避免遍歷時修改集合
-            foreach (Transform childToDestroy in childrenToDestroy)
-            {
-                Debug.Log("Safely Destroying: " + childToDestroy.gameObject.name);
-                Destroy(childToDestroy.gameObject);
+                // 如果有Gem組件
+                if (gemComponent != null)
+                {
+                    // 檢查這個寶石是否在gems數組中的正確位置
+                    bool isValidGem =
+                        gemComponent.x >= 0 &&
+                        gemComponent.x < width &&
+                        gemComponent.y >= 0 &&
+                        gemComponent.y < height &&
+                        gems[gemComponent.x, gemComponent.y] == gemComponent;
+
+                    // 如果不是有效的寶石，標記為刪除
+                    if (!isValidGem)
+                    {
+                        //Debug.Log($"檢測到未管理的寶石：位置 ({gemComponent.x}, {gemComponent.y})");
+                        Destroy(child.gameObject);
+                    }
+                }
             }
         }
     }
