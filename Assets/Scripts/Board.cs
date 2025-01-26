@@ -1,6 +1,7 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Match3Game
 {
@@ -8,6 +9,8 @@ namespace Match3Game
     {
         public static Board instance;
         public GameObject[] gemPrefabs;
+        public GameObject[] resGemPrefabs;  // Ë≥áÊ∫êÂØ∂Áü≥prefabs [LineH, LineV, Cross, Bomb]
+
         public int width = 8;
         public int height = 8;
         public float gemMoveSpeed = 5f;
@@ -112,7 +115,24 @@ namespace Match3Game
 
             yield return new WaitForSeconds(swapDuration);
 
-            if (!CheckForMatches())
+            // Â¶ÇÊûúÊòØË≥áÊ∫êÂØ∂Áü≥‰∏î‰∏çÊòØBombÔºåÁõ¥Êé•Âú®Êñ∞‰ΩçÁΩÆËß∏ÁôºÊïàÊûú
+            if (gem1.id >= 100 && gem1.id != 103)
+            {
+                gem1.x = x2;
+                gem1.y = y2;
+                gem2.x = x1;
+                gem2.y = y1;
+                ActivateResourceGem(gem1);
+            }
+            else if (gem2.id >= 100 && gem2.id != 103)
+            {
+                gem1.x = x2;
+                gem1.y = y2;
+                gem2.x = x1;
+                gem2.y = y1;
+                ActivateResourceGem(gem2);
+            }
+            else if (!CheckForMatches())
             {
                 gems[x1, y1] = gem1;
                 gems[x2, y2] = gem2;
@@ -138,7 +158,7 @@ namespace Match3Game
 
         void CheckAllMatches()
         {
-            // ¿À¨d§Ù•≠§Ë¶V
+            // Ê™¢Êü•Ê∞¥Âπ≥ÊñπÂêë
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width - 2; x++)
@@ -147,7 +167,7 @@ namespace Match3Game
                 }
             }
 
-            // ¿À¨d´´™Ω§Ë¶V  
+            // Ê™¢Êü•ÂûÇÁõ¥ÊñπÂêë  
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height - 2; y++)
@@ -198,7 +218,7 @@ namespace Match3Game
             bool hasMatches = false;
             CheckAllMatches();
 
-            // ¿À¨d¨Oß_¶≥•Ù¶Ûƒ_•€≥Qº–∞O¨∞matched
+            // Ê™¢Êü•ÊòØÂê¶Êúâ‰ªª‰ΩïÂØ∂Áü≥Ë¢´Ê®ôË®òÁÇ∫matched
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -240,16 +260,17 @@ namespace Match3Game
 
             foreach (var pair in idCounts)
             {
-                Debug.Log($"id {pair.Key}: {pair.Value} ≠”ƒ_•€≥QÆ¯∞£");
+                //Debug.Log($"id {pair.Key}: {pair.Value} ÂÄãÂØ∂Áü≥Ë¢´Ê∂àÈô§");                
             }
-            Debug.Log($"¡`¶@ {matchedGems.Count} ≠”ƒ_•€≥QÆ¯∞£");
+            //Debug.Log($"Á∏ΩÂÖ± {matchedGems.Count} ÂÄãÂØ∂Áü≥Ë¢´Ê∂àÈô§");
 
             StartCoroutine(FadeAndDestroyGems(matchedGems));
+            CheckSpecialMatch(matchedGems);
         }
 
         public IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy)
         {
-            // •˝±qboard≤æ∞£§ﬁ•Œ
+            // ÂÖàÂæûboardÁßªÈô§ÂºïÁî®
             foreach (var gem in gemsToDestroy)
             {
                 gems[gem.x, gem.y] = null;
@@ -347,7 +368,7 @@ namespace Match3Game
             }
 
             yield return new WaitForSeconds(0.1f);
-            
+
             if (CheckForMatches())
             {
                 yield return new WaitForSeconds(0.1f);
@@ -362,6 +383,113 @@ namespace Match3Game
                 }
             }
         }
+        private void CheckSpecialMatch(List<Gem> matchedGems)
+        {
+            var groups = matchedGems.GroupBy(g => g.id);
 
+            foreach (var group in groups)
+            {
+                var gems = group.ToList();
+                if (gems.Count < 4) continue;
+
+                if (gems.Count >= 5)
+                {
+                    CreateResourceGem(gems[0].x, gems[0].y, 3); // Bomb
+                    continue;
+                }
+
+                if (gems.Count == 4)
+                {
+                    bool isHorizontal = gems.All(g => g.y == gems[0].y);
+                    bool isVertical = gems.All(g => g.x == gems[0].x);
+
+                    if (isHorizontal && isVertical)
+                    {
+                        CreateResourceGem(gems[0].x, gems[0].y, 2); // Cross
+                    }
+                    else if (isHorizontal)
+                    {
+                        CreateResourceGem(gems[0].x, gems[0].y, 0); // LineH
+                    }
+                    else if (isVertical)
+                    {
+                        CreateResourceGem(gems[0].x, gems[0].y, 1); // LineV
+                    }
+                }
+            }
+        }
+        private void CreateResourceGem(int x, int y, int resType)
+        {
+            GameObject gemObj = Instantiate(resGemPrefabs[resType], transform);
+            Gem gem = gemObj.GetComponent<Gem>();
+            gem.Init(100 + resType, x, y); // ‰ΩøÁî®100‰ª•‰∏äÁöÑid‰æÜÊ®ôË≠òË≥áÊ∫êÂØ∂Áü≥
+            gems[x, y] = gem;
+        }
+
+        public void ActivateResourceGem(Gem gem)
+        {
+            StartCoroutine(ActivateResourceGemSequentially(gem));
+        }
+
+        private IEnumerator ActivateResourceGemSequentially(Gem gem)
+        {
+            int resType = gem.id - 100;
+            float delay = 0.01f;
+            List<Gem> allDestroyedGems = new List<Gem>();
+
+            switch (resType)
+            {
+                case 0: // LineH
+                    for (int x = 0; x < width; x++)
+                    {
+                        if (gems[x, gem.y] != null)
+                        {
+                            allDestroyedGems.Add(gems[x, gem.y]);
+                            yield return new WaitForSeconds(delay);
+                        }
+                    }
+                    break;
+
+                case 1: // LineV
+                    for (int y = 0; y < height; y++)
+                    {
+                        if (gems[gem.x, y] != null)
+                        {
+                            allDestroyedGems.Add(gems[gem.x, y]);
+                            yield return new WaitForSeconds(delay);
+                        }
+                    }
+                    break;
+
+                case 2: // Cross
+                    for (int x = 0; x < width; x++)
+                    {
+                        if (gems[x, gem.y] != null)
+                        {
+                            allDestroyedGems.Add(gems[x, gem.y]);
+                            yield return new WaitForSeconds(delay);
+                        }
+                    }
+                    for (int y = 0; y < height; y++)
+                    {
+                        if (gems[gem.x, y] != null && gems[gem.x, y] != gem)
+                        {
+                            allDestroyedGems.Add(gems[gem.x, y]);
+                            yield return new WaitForSeconds(delay);
+                        }
+                    }
+                    break;
+
+                case 3: // Bomb
+                    for (int x = 0; x < width; x++)
+                        for (int y = 0; y < height; y++)
+                            if (gems[x, y] != null)
+                                allDestroyedGems.Add(gems[x, y]);
+                    break;
+            }
+
+            // ÂÖ®ÈÉ®Ê®ôË®òÂÆåÊàêÂæåÔºå‰∏ÄËµ∑Ê∂àÈô§‰∏¶ËêΩ‰∏ã
+            yield return StartCoroutine(FadeAndDestroyGems(allDestroyedGems));
+        }
     }
 }

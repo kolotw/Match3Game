@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 
 namespace Match3Game
@@ -14,6 +14,8 @@ namespace Match3Game
         private bool isDragging = false;
         private const float DRAG_THRESHOLD = 0.3f;
         private const float MIN_DRAG_DISTANCE = 0.1f;
+
+        private bool IsResourceGem => id >= 100;
 
         public void Init(int gemId, int posX, int posY)
         {
@@ -48,6 +50,14 @@ namespace Match3Game
         private void OnMouseDown()
         {
             if (isAnimating || !Board.instance.hasMoveCompleted) return;
+
+            // 點擊資源寶石時直接觸發效果
+            //if (IsResourceGem && Input.GetMouseButtonDown(0))
+            //{
+            //    Board.instance.ActivateResourceGem(this);
+            //    return;
+            //}
+
             dragStart = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             isDragging = true;
         }
@@ -64,9 +74,28 @@ namespace Match3Game
                 return;
 
             isAnimating = true;
+
+            // 如果是資源寶石，在移動後觸發效果
+            if (IsResourceGem)
+            {
+                StartCoroutine(MoveAndActivate(targetPos));
+                return;
+            }
+
             Board.instance.TrySwapGems(x, y, targetPos.x, targetPos.y);
         }
+        private IEnumerator MoveAndActivate(Vector2Int targetPos)
+        {
+            var targetGem = Board.instance.GetGem(targetPos.x, targetPos.y);
+            if (targetGem == null) yield break;
 
+            // 先移動
+            Board.instance.TrySwapGems(x, y, targetPos.x, targetPos.y);
+            yield return new WaitForSeconds(0.3f / Board.instance.gemMoveSpeed);
+
+            // 移動完後觸發效果
+            Board.instance.ActivateResourceGem(this);
+        }
         public IEnumerator AnimateMove(Vector3 target, float duration)
         {
             Vector3 start = transform.position;

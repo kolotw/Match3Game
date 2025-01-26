@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -84,7 +84,7 @@ namespace Match3Game
         {
             isResetting = true;
 
-            // ¦¬¶°©Ò¦³Ä_¥Û
+            // æ”¶é›†æ‰€æœ‰å¯¶çŸ³
             List<Gem> allGems = new List<Gem>();
             for (int x = 0; x < board.width; x++)
             {
@@ -100,7 +100,7 @@ namespace Match3Game
 
             yield return StartCoroutine(board.FadeAndDestroyGems(allGems));
 
-            // ­«·s¶ñº¡´Ñ½L
+            // é‡æ–°å¡«æ»¿æ£‹ç›¤
             yield return StartCoroutine(board.FillEmptySpaces());
             isResetting = false;
             ResetPredictionTimer();
@@ -184,7 +184,7 @@ namespace Match3Game
             Gem currentGem = board.GetGem(x, y);
             if (currentGem == null) return false;
 
-            // ¤ô¥­ÀË¬d
+            // æ°´å¹³æª¢æŸ¥
             if (x >= 2 &&
                 board.GetGem(x - 2, y)?.id == board.GetGem(x - 1, y)?.id &&
                 board.GetGem(x - 1, y)?.id == currentGem.id)
@@ -200,7 +200,7 @@ namespace Match3Game
                 board.GetGem(x + 1, y)?.id == board.GetGem(x + 2, y)?.id)
                 return true;
 
-            // ««ª½ÀË¬d
+            // åž‚ç›´æª¢æŸ¥
             if (y >= 2 &&
                 board.GetGem(x, y - 2)?.id == board.GetGem(x, y - 1)?.id &&
                 board.GetGem(x, y - 1)?.id == currentGem.id)
