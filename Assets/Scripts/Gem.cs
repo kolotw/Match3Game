@@ -115,9 +115,18 @@ namespace Match3Game
         }
         public IEnumerator AnimateMove(Vector3 target, float duration)
         {
+            // 早期檢查，防止無效協程啟動
+            if (this == null || gameObject == null)
+            {
+                yield break;
+            }
+
             if (duration <= 0)
             {
-                transform.position = target;
+                if (this != null && gameObject != null)
+                {
+                    transform.position = target;
+                }
                 isAnimating = false;
                 yield break;
             }
@@ -128,6 +137,7 @@ namespace Match3Game
             isAnimating = true;
             while (elapsed < duration)
             {
+                // 每次迭代都進行嚴格檢查
                 if (this == null || gameObject == null)
                 {
                     yield break;
@@ -135,10 +145,16 @@ namespace Match3Game
 
                 elapsed += Time.deltaTime;
                 float t = elapsed / duration;
-                transform.position = Vector3.Lerp(start, target, t);
+
+                // 再次檢查，防止空引用
+                if (this != null && gameObject != null)
+                {
+                    transform.position = Vector3.Lerp(start, target, t);
+                }
                 yield return null;
             }
 
+            // 最終確保位置設置和動畫狀態更新
             if (this != null && gameObject != null)
             {
                 transform.position = target;

@@ -32,7 +32,12 @@ namespace Match3Game
         }
         private IEnumerator ActivateSpecialGemSequentially(Gem gem)
         {
-            if (gem == null || gem.gameObject == null) yield break;
+            // 提前檢查寶石和遊戲物件的有效性
+            if (gem == null || gem.gameObject == null)
+            {
+                Debug.LogWarning("嘗試啟動無效的特殊寶石");
+                yield break;
+            }
 
             board.hasMoveCompleted = false;
             board.matchPredictor?.StopTimer();
