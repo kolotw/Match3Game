@@ -21,7 +21,7 @@ namespace Match3Game
         public const float SWAP_DURATION = 0.2f;
         public const float DESTROY_DELAY = 0.2f;
         public const float COLLECT_DELAY = 0.01f;
-        public const float COMPLETE_DELAY = 0.1f;
+        public const float COMPLETE_DELAY = 0.01f;
         public bool hasMoveCompleted = false;
 
         [SerializeField] private GameObject[] gemPrefabs;
@@ -66,6 +66,12 @@ namespace Match3Game
         private void Update()
         {
             gemsText.text = "Gems: " + transform.childCount;
+
+            // 每隔一段時間檢查一次（例如每300幀）
+            if (Time.frameCount % 300 == 0)
+            {
+                CleanupBoard();
+            }
         }
 
         public Gem GetGem(int x, int y)
@@ -127,14 +133,12 @@ namespace Match3Game
             {
                 yield return new WaitForSeconds(DESTROY_DELAY);
 
-                // 找出觸發點
                 var matches = matchFinder.FindAllMatches();
                 foreach (var match in matches)
                 {
                     if (match.matchedGems.Any(g => g.x == x1 && g.y == y1) ||
                         match.matchedGems.Any(g => g.x == x2 && g.y == y2))
                     {
-                        // 如果匹配包含交換的寶石，記錄觸發點
                         triggerX = match.matchedGems.Any(g => g.x == x1 && g.y == y1) ? x1 : x2;
                         triggerY = match.matchedGems.Any(g => g.x == x1 && g.y == y1) ? y1 : y2;
                         break;
@@ -155,26 +159,27 @@ namespace Match3Game
             }
             else
             {
-                // 明確還原寶石的 x, y 座標
-                gem1.x = x1;
-                gem1.y = y1;
-                gem2.x = x2;
-                gem2.y = y2;
-
                 gems[x1, y1] = gem1;
                 gems[x2, y2] = gem2;
                 StartCoroutine(gem1.AnimateMove(new Vector3(x1, y1, 0), swapDuration));
                 StartCoroutine(gem2.AnimateMove(new Vector3(x2, y2, 0), swapDuration));
                 yield return new WaitForSeconds(swapDuration);
-                gem1.isAnimating = false;
-                gem2.isAnimating = false;
-                hasMoveCompleted = true;
-                statusText.text = "可遊玩";
-                matchPredictor?.ResetPredictionTimer();
             }
-            isSwitching = false;
-        }
 
+            gem1.isAnimating = false;
+            gem2.isAnimating = false;
+            isSwitching = false;
+            hasMoveCompleted = true;
+            statusText.text = "可遊玩";
+            matchPredictor?.ResetPredictionTimer();
+        }
+        private bool ValidateGemPosition(Gem gem, int x, int y)
+        {
+            return gem != null &&
+           gem.gameObject != null &&
+           x >= 0 && x < width &&
+           y >= 0 && y < height;
+        }
         public bool CheckForMatches()
         {
             if (isSwitching && (gem1.id >= 100 || gem2.id >= 100))
@@ -315,33 +320,37 @@ namespace Match3Game
                         }
                     }
 
-                    // 根據配對數量和方向決定資源寶石類型
-                    if (gems.Count >= 5)
+                    // 檢查目標位置是否已經有寶石
+                    if (this.gems[createX, createY] == null)
                     {
-                        CreateResourceGem(createX, createY, 3); // Bomb
-                    }
-                    else if (isHorizontal && isVertical)
-                    {
-                        CreateResourceGem(createX, createY, 2); // Cross  
-                    }
-                    else if (isHorizontal)
-                    {
-                        CreateResourceGem(createX, createY, 0); // LineH
-                    }
-                    else if (isVertical)
-                    {
-                        CreateResourceGem(createX, createY, 1); // LineV
-                    }
-                    // 確保4個寶石的配對也會生成資源寶石
-                    else if (gems.Count == 4)
-                    {
-                        CreateResourceGem(createX, createY, 0); // 預設為橫線
+                        // 根據配對數量和方向決定資源寶石類型
+                        if (gems.Count >= 5)
+                        {
+                            CreateResourceGem(createX, createY, 3); // Bomb
+                        }
+                        else if (isHorizontal && isVertical)
+                        {
+                            CreateResourceGem(createX, createY, 2); // Cross  
+                        }
+                        else if (isHorizontal)
+                        {
+                            CreateResourceGem(createX, createY, 0); // LineH
+                        }
+                        else if (isVertical)
+                        {
+                            CreateResourceGem(createX, createY, 1); // LineV
+                        }
+                        // 確保4個寶石的配對也會生成資源寶石
+                        else if (gems.Count == 4)
+                        {
+                            CreateResourceGem(createX, createY, 0); // 預設為橫線
+                        }
                     }
                 }
             }
 
             yield return StartCoroutine(MakeGemsFall());
-            CheckAndCleanUnmanagedGems();
+            //CheckAndCleanUnmanagedGems();
         }
         public IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy)
         {
@@ -395,12 +404,17 @@ namespace Match3Game
                     {
                         if (gems[x, y] == null && gems[x, y + 1] != null)
                         {
-                            gems[x, y] = gems[x, y + 1];
-                            gems[x, y + 1] = null;
-                            gems[x, y].y = y;
-                            animatingGems++;
-                            StartCoroutine(WaitForGemFall(gems[x, y], x, y, () => animatingGems--));
-                            hasFalling = true;
+                            // 在移動寶石前驗證其位置
+                            var gem = gems[x, y + 1];
+                            if (ValidateGemPosition(gem, x, y + 1))
+                            {
+                                gems[x, y] = gem;
+                                gems[x, y + 1] = null;
+                                gem.y = y;
+                                animatingGems++;
+                                StartCoroutine(WaitForGemFall(gem, x, y, () => animatingGems--));
+                                hasFalling = true;
+                            }
                         }
                     }
                 }
@@ -415,6 +429,7 @@ namespace Match3Game
 
             StartCoroutine(FillEmptySpaces());
         }
+
 
         private IEnumerator WaitForGemFall(Gem gem, int x, int y, System.Action onComplete)
         {
@@ -437,25 +452,39 @@ namespace Match3Game
                 {
                     if (gems[x, y] == null)
                     {
-                        gemFactory.CreateGem(x, y);
-                        gems[x, y].transform.position = new Vector3(x, height + dropDelay, 0);
-                        StartCoroutine(gems[x, y].AnimateMove(
-                            new Vector3(x, y, 0),
-                            0.3f / gemMoveSpeed
-                        ));
-                        dropDelay++;
-                        yield return new WaitForSeconds(0.1f);
+                        bool hasFloatingGems = false;
+                        for (int above = y + 1; above < height; above++)
+                        {
+                            if (gems[x, above] != null)
+                            {
+                                hasFloatingGems = true;
+                                break;
+                            }
+                        }
+
+                        if (!hasFloatingGems)
+                        {
+                            gemFactory.CreateGem(x, y);
+                            gems[x, y].transform.position = new Vector3(x, height + dropDelay, 0);
+                            StartCoroutine(gems[x, y].AnimateMove(
+                                new Vector3(x, y, 0),
+                                0.3f / gemMoveSpeed
+                            ));
+                            dropDelay++;
+                            yield return new WaitForSeconds(0.1f);
+                        }
                     }
                 }
             }
 
             yield return new WaitForSeconds(0.1f);
 
-            // 保持原有的循環邏輯
+            // 修改這裡的連鎖消除時間控制
             while (CheckForMatches())
             {
-                yield return new WaitForSeconds(0.1f);
+                yield return new WaitForSeconds(DESTROY_DELAY);  // 改為使用相同的DESTROY_DELAY (0.2秒)
                 DestroyMatches(false);
+                yield return new WaitForSeconds(DESTROY_DELAY);  // 增加與手動配對相同的等待時間
             }
 
             if (!statusText.text.Equals("消除中"))
@@ -464,7 +493,7 @@ namespace Match3Game
                 statusText.text = "可遊玩";
                 matchPredictor?.ResetPredictionTimer();
             }
-            CheckAndCleanUnmanagedGems();
+            //CheckAndCleanUnmanagedGems();
         }
 
         private void CreateResourceGem(int x, int y, int resType)
@@ -503,5 +532,27 @@ namespace Match3Game
                 }
             }
         }
+        public void CleanupBoard()
+        {
+            // 只清理那些確實不在正確位置的寶石
+            foreach (Transform child in transform)
+            {
+                Gem gemComponent = child.GetComponent<Gem>();
+                if (gemComponent != null)
+                {
+                    if (gemComponent.x < 0 || gemComponent.x >= width ||
+                        gemComponent.y < 0 || gemComponent.y >= height ||
+                        gems[gemComponent.x, gemComponent.y] != gemComponent)
+                    {
+                        Destroy(child.gameObject);
+                    }
+                }
+            }
+        }
+
+
+
+
+
     }
 }

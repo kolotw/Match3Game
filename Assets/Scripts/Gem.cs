@@ -27,16 +27,16 @@ namespace Match3Game
 
         private void Update()
         {
-            if (!isDragging || isAnimating || !Board.instance.hasMoveCompleted)
+            if (!isDragging ||
+                isAnimating ||
+                !Board.instance.hasMoveCompleted ||
+                Board.instance == null)
             {
                 return;
             }
 
             Vector2 currentPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Vector2 dragDelta = currentPos - dragStart;
-
-            // 增加詳細的 Debug 日誌
-            //Debug.Log($"Drag Delta: {dragDelta}, Magnitude: {dragDelta.magnitude}");
 
             if (dragDelta.magnitude < MIN_DRAG_DISTANCE) return;
 
@@ -55,7 +55,8 @@ namespace Match3Game
 
         private void OnMouseDown()
         {
-            if (isAnimating || !Board.instance.hasMoveCompleted) return;
+            if (isAnimating || !Board.instance.hasMoveCompleted ||
+        Board.instance == null) return;
 
             // 點擊資源寶石時直接觸發效果
             //if (IsResourceGem && Input.GetMouseButtonDown(0))
@@ -75,16 +76,23 @@ namespace Match3Game
 
         private void TrySwap(Vector2Int targetPos)
         {
+            // 檢查目標位置是否有效
             if (targetPos.x < 0 || targetPos.x >= Board.instance.width ||
                 targetPos.y < 0 || targetPos.y >= Board.instance.height)
             {
-                isAnimating = false; 
+                isAnimating = false;
                 return;
             }
 
-            isAnimating = true;
+            // 檢查是否可以進行交換
+            var targetGem = Board.instance.GetGem(targetPos.x, targetPos.y);
+            if (targetGem == null || targetGem.isAnimating)
+            {
+                isAnimating = false;
+                return;
+            }
 
-            // 如果是資源寶石，在移動後觸發效果
+            // 如果是資源寶石，確保可以移動
             if (IsResourceGem)
             {
                 StartCoroutine(MoveAndActivate(targetPos));
@@ -107,20 +115,36 @@ namespace Match3Game
         }
         public IEnumerator AnimateMove(Vector3 target, float duration)
         {
+            if (duration <= 0)
+            {
+                transform.position = target;
+                isAnimating = false;
+                yield break;
+            }
+
             Vector3 start = transform.position;
             float elapsed = 0;
 
-            isAnimating = true;  // 確保動畫開始時設置
+            isAnimating = true;
             while (elapsed < duration)
             {
+                if (this == null || gameObject == null)
+                {
+                    yield break;
+                }
+
                 elapsed += Time.deltaTime;
                 float t = elapsed / duration;
                 transform.position = Vector3.Lerp(start, target, t);
                 yield return null;
             }
 
-            transform.position = target;
-            isAnimating = false;  // 動畫結束時重置
+            if (this != null && gameObject != null)
+            {
+                transform.position = target;
+            }
+            isAnimating = false;
         }
+
     }
 }
