@@ -159,8 +159,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 258291702}
-  - component: {fileID: 258291701}
   - component: {fileID: 258291703}
+  - component: {fileID: 258291704}
   m_Layer: 0
   m_Name: Board
   m_TagString: Untagged
@@ -168,34 +168,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &258291701
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258291700}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c0c7b25cca2424b45affd0027c0530e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  width: 5
-  height: 8
-  gemMoveSpeed: 3
-  matchPredictor: {fileID: 0}
-  statusText: {fileID: 1768676954}
-  gemsText: {fileID: 348896646}
-  hasMoveCompleted: 0
-  gemPrefabs:
-  - {fileID: 3509592728334798258, guid: f9115b9e66f8c6049aa4e16b511ac695, type: 3}
-  - {fileID: 6396109961415817149, guid: 5d550a3750f0e334b94f52e8b95d22d1, type: 3}
-  - {fileID: 2038196581494960673, guid: 42db343d095a7bc449566dcca1c7297b, type: 3}
-  resGemPrefabs:
-  - {fileID: 8466207186695394168, guid: 5c7624df17977be45924a5c9ad1e81d0, type: 3}
-  - {fileID: 4334207860041640017, guid: b6895930c7df7114d9cfef85c4261c74, type: 3}
-  - {fileID: 4725539510301056082, guid: 584f8090178601444a4b925b75d7308a, type: 3}
-  - {fileID: 3804780018175326054, guid: 6ee069ae0345db442921d75396268bd4, type: 3}
 --- !u!4 &258291702
 Transform:
   m_ObjectHideFlags: 0
@@ -223,6 +195,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec4d13dfbe357ce4291fc2dfdf8ed983, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &258291704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 258291700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0c7b25cca2424b45affd0027c0530e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  width: 5
+  height: 8
+  gemMoveSpeed: 5
+  matchPredictor: {fileID: 0}
+  statusText: {fileID: 1768676954}
+  gemsText: {fileID: 348896646}
+  gemPrefabs:
+  - {fileID: 6396109961415817149, guid: 5d550a3750f0e334b94f52e8b95d22d1, type: 3}
+  - {fileID: 2038196581494960673, guid: 42db343d095a7bc449566dcca1c7297b, type: 3}
+  - {fileID: 2279343414488489143, guid: 10e68873fff8a1242b067e22c8b6f54f, type: 3}
+  - {fileID: 3509592728334798258, guid: f9115b9e66f8c6049aa4e16b511ac695, type: 3}
+  resGemPrefabs:
+  - {fileID: 8466207186695394168, guid: 5c7624df17977be45924a5c9ad1e81d0, type: 3}
+  - {fileID: 4334207860041640017, guid: b6895930c7df7114d9cfef85c4261c74, type: 3}
+  - {fileID: 4725539510301056082, guid: 584f8090178601444a4b925b75d7308a, type: 3}
+  - {fileID: 3804780018175326054, guid: 6ee069ae0345db442921d75396268bd4, type: 3}
+  onError: 0
 --- !u!1 &348896644
 GameObject:
   m_ObjectHideFlags: 0
@@ -433,7 +434,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2, y: 3.5, z: -10}
+  m_LocalPosition: {x: 2, y: 4, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

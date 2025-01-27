@@ -20,6 +20,11 @@ namespace Match3Game
             {
                 gemId = Random.Range(0, gemPrefabs.Length);
             }
+            if (board.onError) { 
+                Debug.Log("Error: ­n¶ñ¤W¸ê·½");  
+                board.onError=false;
+                gemId = 2;
+            }
             GameObject gemObj = Object.Instantiate(gemPrefabs[gemId], board.transform);
             Gem gem = gemObj.GetComponent<Gem>();
             gem.Init(gemId, x, y);
