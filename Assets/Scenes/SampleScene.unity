@@ -216,7 +216,6 @@ MonoBehaviour:
   gemPrefabs:
   - {fileID: 6396109961415817149, guid: 5d550a3750f0e334b94f52e8b95d22d1, type: 3}
   - {fileID: 2038196581494960673, guid: 42db343d095a7bc449566dcca1c7297b, type: 3}
-  - {fileID: 2279343414488489143, guid: 10e68873fff8a1242b067e22c8b6f54f, type: 3}
   - {fileID: 3509592728334798258, guid: f9115b9e66f8c6049aa4e16b511ac695, type: 3}
   resGemPrefabs:
   - {fileID: 8466207186695394168, guid: 5c7624df17977be45924a5c9ad1e81d0, type: 3}

@@ -306,33 +306,49 @@ namespace Match3Game
         // 檢查交換是否產生匹配，處理特殊寶石等情況
         private void ProcessMatchesAfterSwap()
         {
-            // 安全性檢查：確保交換的寶石存在
             if (gem1 == null || gem2 == null)
             {
-                // 記錄處理匹配時的異常情況
                 Debug.LogWarning("嘗試處理匹配時，寶石為空");
-
-                // 標記發生錯誤
                 onError = true;
-
-                // 觸發寶石下落邏輯
                 StartCoroutine(MakeGemsFall());
                 return;
             }
 
-            // 檢查是否存在匹配
+            // 確定移動方向
+            bool isHorizontalMove = gem1.y == gem2.y;
+            int triggerX = isHorizontalMove ? Math.Min(gem1.x, gem2.x) : gem1.x;
+            int triggerY = isHorizontalMove ? gem1.y : Math.Min(gem1.y, gem2.y);
+
             bool hasMatches = CheckForMatches();
+            if (hasMatches)
+            {
+                // 尋找匹配組
+                var matchGroups = FindMatchGroups(isHorizontalMove, triggerX, triggerY);
+
+                // 處理每個匹配組
+                foreach (var group in matchGroups)
+                {
+                    // 使用新的整合方法
+                    var (resourceType, isHorizontal, isVertical, matchedGems) = DetectMatchAndDetermineResourceType(group);
+
+                    // 如果決定了有效的資源寶石類型，則創建資源寶石
+                    if (resourceType != -1)
+                    {
+                        ProcessResourceGemCreation(matchedGems, true, triggerX, triggerY, resourceType);
+                    }
+
+                    // 記錄匹配信息，用於調試
+                    Debug.Log($"匹配組：數量={matchedGems.Count}, 水平={isHorizontal}, 垂直={isVertical}, 資源類型={resourceType}");
+                }
+
+                // 啟動匹配處理序列
+                StartCoroutine(ProcessMatchSequence());
+            }
 
             // 處理特殊寶石（ID 103）的情況
             if (gem1.id == 103 || gem2.id == 103)
             {
-                // 激活特殊寶石效果
                 specialGemActivator.ActivateSpecialGem(gem1.id == 103 ? gem1 : gem2);
-            }
-            // 如果存在匹配，啟動匹配處理序列
-            else if (hasMatches)
-            {
-                StartCoroutine(ProcessMatchSequence());
             }
             // 處理其他特殊寶石（ID >= 100）的情況
             else if (gem1.id >= 100 || gem2.id >= 100)
@@ -340,10 +356,81 @@ namespace Match3Game
                 specialGemActivator.ActivateSpecialGem(gem1.id >= 100 ? gem1 : gem2);
             }
             // 如果沒有匹配，將寶石換回原位
-            else
+            else if (!hasMatches)
             {
                 SwapBack();
             }
+        }
+        // 輔助方法：找出連續的同ID寶石組
+        // 尋找連續的同ID寶石組的輔助方法
+        // 尋找連續的同ID寶石組的輔助方法，支持更複雜的匹配檢測
+        private List<List<Gem>> FindMatchGroups(bool isHorizontalMove, int triggerX, int triggerY)
+        {
+            var matchGroups = new List<List<Gem>>();
+
+            // 篩選出所有同ID的寶石
+            var potentialMatches = gems
+                .Cast<Gem>()
+                .Where(g => g != null && g.id == gem1.id)
+                .ToList();
+
+            // 檢查水平和垂直方向的匹配
+            var horizontalGroup = potentialMatches
+                .Where(g => g.y == triggerY)
+                .OrderBy(g => g.x)
+                .ToList();
+
+            var verticalGroup = potentialMatches
+                .Where(g => g.x == triggerX)
+                .OrderBy(g => g.y)
+                .ToList();
+
+            // 分別檢查水平和垂直方向的連續匹配
+            List<Gem> horizontalConsecutive = FindConsecutiveGems(horizontalGroup, true);
+            List<Gem> verticalConsecutive = FindConsecutiveGems(verticalGroup, false);
+
+            // 根據匹配數量加入匹配組
+            if (horizontalConsecutive.Count >= 4)
+                matchGroups.Add(horizontalConsecutive);
+
+            if (verticalConsecutive.Count >= 4)
+                matchGroups.Add(verticalConsecutive);
+
+            return matchGroups;
+        }
+        // 查找連續寶石的輔助方法
+        private List<Gem> FindConsecutiveGems(List<Gem> gems, bool isHorizontal)
+        {
+            if (gems.Count < 4) return new List<Gem>();
+
+            var consecutiveGroups = new List<List<Gem>>();
+            var currentGroup = new List<Gem> { gems[0] };
+
+            for (int i = 1; i < gems.Count; i++)
+            {
+                bool isConsecutive = isHorizontal
+                    ? (gems[i].x - gems[i - 1].x == 1)
+                    : (gems[i].y - gems[i - 1].y == 1);
+
+                if (isConsecutive)
+                {
+                    currentGroup.Add(gems[i]);
+                }
+                else
+                {
+                    if (currentGroup.Count >= 4)
+                        consecutiveGroups.Add(currentGroup);
+
+                    currentGroup = new List<Gem> { gems[i] };
+                }
+            }
+
+            // 檢查最後一組
+            if (currentGroup.Count >= 4)
+                consecutiveGroups.Add(currentGroup);
+
+            // 返回最長的連續組
+            return consecutiveGroups.OrderByDescending(g => g.Count).FirstOrDefault() ?? new List<Gem>();
         }
         // 檢查遊戲板上是否存在寶石匹配
         // 這是遊戲核心邏輯的關鍵方法，用於偵測可消除的寶石組合
@@ -617,12 +704,10 @@ namespace Match3Game
             foreach (var group in matchGroups)
             {
                 var gems = group.Value;
-
-                // 當匹配的寶石數量達到4個或以上時
                 if (gems.Count >= 4)
                 {
-                    // 處理特殊寶石的創建
-                    ProcessResourceGemCreation(gems, isFromInteraction, interactX, interactY);
+                    var (resourceType, isHorizontal, isVertical, _) = DetectMatchAndDetermineResourceType(gems);
+                    ProcessResourceGemCreation(gems, isFromInteraction, interactX, interactY, resourceType);
                 }
             }
 
@@ -676,38 +761,45 @@ namespace Match3Game
         }
         // 處理特殊資源寶石的創建邏輯
         // 根據匹配的寶石特徵決定是否及如何生成特殊寶石
-        private void ProcessResourceGemCreation(List<Gem> gems, bool isFromInteraction, int interactX, int interactY)
+        private void ProcessResourceGemCreation(List<Gem> gems, bool isFromInteraction, int interactX, int interactY, int resourceType)
         {
+            if (resourceType == -1) return; // 如果沒有有效的資源寶石類型，直接返回
+
             int createX, createY;
-
-            // 檢查匹配的寶石是否在同一行或同一列
-            // 這決定了特殊寶石的類型和生成位置
-            bool isHorizontal = gems.All(g => g.y == gems[0].y);  // 是否水平匹配
-            bool isVertical = gems.All(g => g.x == gems[0].x);    // 是否垂直匹配
-
-            // 確定特殊寶石的創建位置
             if (isFromInteraction)
             {
-                // 如果是由玩家交互觸發，使用交互點座標
                 createX = interactX;
                 createY = interactY;
             }
             else
             {
-                // 自動計算最佳的特殊寶石位置
-                (createX, createY) = CalculateResourceGemPosition(gems, isHorizontal, isVertical);
+                (createX, createY) = CalculateResourceGemPosition(gems);
             }
 
-            // 只在目標位置為空時創建特殊寶石
-            // 防止覆蓋已存在的寶石
-            if (this.gems[createX, createY] == null)
+            if (IsValidPosition(createX, createY) && this.gems[createX, createY] == null)
             {
-                // 根據匹配特徵和數量決定特殊寶石類型
-                CreateResourceGem(createX, createY,
-                    DetermineResourceGemType(gems.Count, isHorizontal, isVertical));
+                CreateResourceGem(createX, createY, resourceType);
+            }
+            else
+            {
+                Debug.LogWarning($"無法在 ({createX}, {createY}) 創建資源寶石。位置無效或已被佔用。");
             }
         }
+        private (int x, int y) CalculateResourceGemPosition(List<Gem> gems)
+        {
+            if (gems == null || gems.Count == 0)
+                return (-1, -1);
 
+            // 計算所有寶石的平均位置
+            float avgX = (float)gems.Average(g => g.x);
+            float avgY = (float)gems.Average(g => g.y);
+
+            // 找到最接近平均位置的寶石
+            var closestGem = gems.OrderBy(g =>
+                Math.Pow(g.x - avgX, 2) + Math.Pow(g.y - avgY, 2)).First();
+
+            return (closestGem.x, closestGem.y);
+        }
         // 計算特殊資源寶石的最佳創建位置
         // 邏輯：在匹配的寶石群中找一個最中間的位置
         private (int x, int y) CalculateResourceGemPosition(List<Gem> gems, bool isHorizontal, bool isVertical)
@@ -733,42 +825,67 @@ namespace Match3Game
                 return (gems[0].x, gems[0].y);
             }
         }
-
-        // 根據匹配特徵確定特殊寶石的類型
-        // 設計了複雜的邏輯來生成不同效果的特殊寶石
-        private int DetermineResourceGemType(int matchCount, bool isHorizontal, bool isVertical)
+        private (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems) DetectMatchAndDetermineResourceType(List<Gem> gems)
         {
-            // 根據匹配的數量和方向，生成不同類型的特殊寶石
-            if (matchCount >= 5)
+            if (gems.Count < 2)
+                return (-1, false, false, new List<Gem>());
+
+            // 按 x 和 y 座標對寶石進行分組
+            var groupedByX = gems.GroupBy(g => g.x).Where(g => g.Count() >= 2).ToList();
+            var groupedByY = gems.GroupBy(g => g.y).Where(g => g.Count() >= 2).ToList();
+
+            bool isHorizontal = groupedByY.Any();
+            bool isVertical = groupedByX.Any();
+
+            // 檢查是否為轉角型匹配（L型或T型）
+            bool isCornerMatch = false;
+            if (gems.Count >= 5)
             {
-                // 5個及以上寶石匹配：創建炸彈類型
-                // 這是最強大的特殊寶石，可以清除大範圍寶石
-                return 3; // Bomb 類型
+                var uniqueX = gems.Select(g => g.x).Distinct().ToList();
+                var uniqueY = gems.Select(g => g.y).Distinct().ToList();
+                isCornerMatch = uniqueX.Count > 1 && uniqueY.Count > 1 &&
+                                groupedByX.Count > 1 && groupedByY.Count > 1;
             }
-            else if (isHorizontal && isVertical)
+
+            // 如果是轉角型匹配，同時設定水平和垂直為真
+            if (isHorizontal && isVertical)
             {
-                // 同時滿足水平和垂直匹配：創建十字型
-                // 提供一個特殊的清除效果
-                return 2; // Cross 類型
+                isCornerMatch = true;
+            }
+            //if (isCornerMatch)
+            //{
+            //    isHorizontal = true;
+            //    isVertical = true;
+            //}
+
+            // 決定資源寶石類型
+            int resourceType;
+            if (isCornerMatch && gems.Count >= 5)
+            {
+                resourceType = 2; // Cross 類型 Bomb
+            }
+            else if ((isHorizontal || isVertical) && gems.Count >= 5)
+            {
+                resourceType = 3; // 特殊清除線寶石 B
             }
             else if (isHorizontal)
             {
-                // 純水平匹配：創建水平清除線
-                return 0; // LineH 類型
+                resourceType = 0; // 普通橫向清除線寶石 A
             }
             else if (isVertical)
             {
-                // 純垂直匹配：創建垂直清除線
-                return 1; // LineV 類型
+                resourceType = 1; // 普通直向清除線寶石 A
             }
             else
             {
-                // 默認返回水平清除線
-                // 對於4個寶石的匹配，預設為水平清除線
-                return 0; // 默認 LineH 類型
+                resourceType = -1; // 無特殊寶石
             }
-        }
 
+            // 記錄檢測結果以便除錯
+            Debug.Log($"匹配檢測：寶石數={gems.Count}, 水平={isHorizontal}, 垂直={isVertical}, 轉角={isCornerMatch}, 資源類型={resourceType}");
+
+            return (resourceType, isHorizontal, isVertical, gems);
+        }
         // 創建特殊資源寶石的方法
         // 實際生成特殊寶石遊戲物件的邏輯
         private void CreateResourceGem(int x, int y, int resType)
