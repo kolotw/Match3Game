@@ -34,6 +34,8 @@ namespace Match3Game
         // 二維數組，用於追蹤遊戲板上每個位置的寶石
         [HideInInspector] public Gem[,] gems;
 
+        int triggerX, triggerY; // 觸發點的座標
+
         // 遊戲邏輯相關的組件引用
         [SerializeField] public MatchPredictor matchPredictor;  // 匹配預測器
         [SerializeField] public Text statusText;  // 顯示遊戲狀態的UI文字
@@ -55,6 +57,8 @@ namespace Match3Game
 
         // 遊戲出錯標記
         public bool onError = false;
+
+        bool byPlayer = false; // 是否由玩家操作
 
         // 遊戲邏輯輔助類別
         private GemFactory gemFactory;        // 寶石工廠
@@ -218,6 +222,7 @@ namespace Match3Game
         // 這是玩家互動的核心方法
         public void TrySwapGems(int x1, int y1, int x2, int y2)
         {
+            byPlayer = true;
             // 首先驗證移動的有效性
             // 檢查座標是否合法、是否為相鄰寶石等
             if (!ValidateMove(x1, y1, x2, y2)) return;
@@ -259,6 +264,7 @@ namespace Match3Game
                 // 重置交換狀態
                 isSwitching = false;
                 CurrentState = GameState.Ready;
+                byPlayer = false;
                 // 結束協程
                 yield break;
             }
@@ -343,7 +349,7 @@ namespace Match3Game
                     bool gem2Matched = matches.Any(m => m.matchedGems.Contains(swappedGem2));
 
                     // 根據哪顆寶石參與了匹配來決定觸發點
-                    int triggerX, triggerY;
+                    //int triggerX, triggerY;
                     if (gem1Matched)
                     {
                         triggerX = swappedGem1.x;
@@ -364,7 +370,7 @@ namespace Match3Game
                         triggerY = swappedGem1.y;
                     }
 
-                    ProcessMatches(isHorizontalMove, triggerX, triggerY);
+                    StartCoroutine(ProcessMatchSequence());
                 }
                 else
                 {
@@ -756,7 +762,7 @@ namespace Match3Game
 
             // 啟動銷毀匹配寶石的協程
             // 傳入匹配的寶石列表和觸發消除的相關信息
-            StartCoroutine(DestroyMatchesSequence(allMatchedGems, isFromInteraction, interactX, interactY));
+            StartCoroutine(DestroyMatchesSequence(allMatchedGems, byPlayer, triggerX, triggerY));
         }
 
         // 銷毀匹配寶石的序列協程
@@ -779,8 +785,26 @@ namespace Match3Game
                     // 標記為已處理
                     processedGems.Add(gem);
 
+                    // 檢查字典中是否包含該寶石的分組
+                    if (matchGroups.ContainsKey(gem.id))
+                    {
+                        // 獲取該寶石所屬的分組
+                        var gemGroup = matchGroups[gem.id];
+
+                        // 如果分組中的寶石數量大於等於3,就立即在該位置生成資源
+                        if (gemGroup.Count >= 3)
+                        {
+                            var (resourceType, isHorizontal, isVertical, _) = DetectMatchAndDetermineResourceType(gemGroup);
+                            // 以該寶石所在位置作為生成資源的觸發點
+                            triggerX = gem.x;
+                            triggerY = gem.y;
+                            ProcessResourceGemCreation(gemGroup, isFromInteraction, resourceType);
+                        }
+                    }
+
                     // 從遊戲板陣列中移除
                     gems[gem.x, gem.y] = null;
+                    Destroy(gems[gem.x, gem.y]);
 
                     // 按寶石ID分組
                     // 便於後續根據匹配特徵生成特殊寶石
@@ -807,7 +831,7 @@ namespace Match3Game
                 if (gems.Count >= 4)
                 {
                     var (resourceType, isHorizontal, isVertical, _) = DetectMatchAndDetermineResourceType(gems);
-                    ProcessResourceGemCreation(gems, isFromInteraction, interactX, interactY, resourceType);
+                    ProcessResourceGemCreation(gems, isFromInteraction, resourceType);
                 }
             }
 
@@ -861,12 +885,12 @@ namespace Match3Game
         }
         // 處理特殊資源寶石的創建邏輯
         // 根據匹配的寶石特徵決定是否及如何生成特殊寶石
-        private bool ProcessResourceGemCreation(List<Gem> gems, bool isFromInteraction, int triggerX, int triggerY, int resourceType)
+        private bool ProcessResourceGemCreation(List<Gem> gems, bool isFromInteraction, int resourceType)
         {
             if (resourceType == -1 || gems.Count < 4) return false;
 
             // 直接使用傳入的觸發點位置
-            if (TryCreateGemAt(triggerX, triggerY, resourceType))
+            if (TryCreateGemAt(resourceType))
             {
                 Debug.Log($"成功在觸發點 ({triggerX}, {triggerY}) 創建資源寶石 類型:{resourceType}");
                 return true;
@@ -875,84 +899,21 @@ namespace Match3Game
             Debug.LogWarning($"無法在觸發點 ({triggerX}, {triggerY}) 創建資源寶石");
             return false;
         }
-        private List<(int x, int y)> FindAllValidPositionsNearby(int centerX, int centerY)
-        {
-            var positions = new List<(int x, int y)>();
-
-            // 檢查周圍8個方向
-            for (int dx = -1; dx <= 1; dx++)
-            {
-                for (int dy = -1; dy <= 1; dy++)
-                {
-                    if (dx == 0 && dy == 0) continue;
-
-                    int newX = centerX + dx;
-                    int newY = centerY + dy;
-
-                    if (IsValidPosition(newX, newY) && gems[newX, newY] == null)
-                    {
-                        positions.Add((newX, newY));
-                    }
-                }
-            }
-
-            // 根據到中心點的距離排序
-            return positions.OrderBy(p =>
-                Math.Pow(p.x - centerX, 2) + Math.Pow(p.y - centerY, 2)
-            ).ToList();
-        }
-        private bool TryCreateGemAt(int x, int y, int resourceType)
+       
+        private bool TryCreateGemAt(int resourceType)
         {
             lock (gems)
             {
-                if (IsValidPosition(x, y) && this.gems[x, y] == null)
+                if (IsValidPosition(triggerX, triggerY) && this.gems[triggerX, triggerY] == null)
                 {
-                    CreateResourceGem(x, y, resourceType);
+                    CreateResourceGem(triggerX, triggerY, resourceType);
                     return true;
                 }
             }
             return false;
         }
-        private (int x, int y) FindValidCreationPosition(int startX, int startY)
-        {
-            if (IsValidPosition(startX, startY) && gems[startX, startY] == null)
-            {
-                return (startX, startY);
-            }
-
-            // 檢查周圍的位置
-            int[] dx = { 0, 1, 0, -1 };
-            int[] dy = { 1, 0, -1, 0 };
-
-            for (int i = 0; i < 4; i++)
-            {
-                int newX = startX + dx[i];
-                int newY = startY + dy[i];
-                if (IsValidPosition(newX, newY) && gems[newX, newY] == null)
-                {
-                    return (newX, newY);
-                }
-            }
-
-            // 如果找不到有效位置，返回原始位置
-            return (startX, startY);
-        }
-        private (int x, int y) CalculateResourceGemPosition(List<Gem> gems)
-        {
-            if (gems == null || gems.Count == 0)
-                return (-1, -1);
-
-            // 計算所有寶石的平均位置
-            float avgX = (float)gems.Average(g => g.x);
-            float avgY = (float)gems.Average(g => g.y);
-
-            // 找到最接近平均位置的寶石
-            var closestGem = gems.OrderBy(g =>
-                Math.Pow(g.x - avgX, 2) + Math.Pow(g.y - avgY, 2)).First();
-
-            return (closestGem.x, closestGem.y);
-        }
-         private (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems) DetectMatchAndDetermineResourceType(List<Gem> gems)
+        
+        private (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems) DetectMatchAndDetermineResourceType(List<Gem> gems)
         {
             if (gems.Count < 2)
                 return (-1, false, false, new List<Gem>());
@@ -1414,54 +1375,5 @@ namespace Match3Game
             // - 任何一個檢查失敗都意味著寶石無效
         }
         #endregion
-        //觸發點原則
-        private (int x, int y) DetermineTriggerPoint(List<Gem> matchedGems)
-        {
-            bool gem1InMatch = matchedGems.Contains(gem1);
-            bool gem2InMatch = matchedGems.Contains(gem2);
-
-            Debug.Log($"判斷觸發點：");
-            Debug.Log($"gem1 (拖動的寶石) 位置: ({gem1.x}, {gem1.y}), 是否參與匹配: {gem1InMatch}");
-            Debug.Log($"gem2 (目標寶石) 位置: ({gem2.x}, {gem2.y}), 是否參與匹配: {gem2InMatch}");
-
-            if (gem1InMatch)
-            {
-                Debug.Log($"選擇拖動寶石位置作為觸發點: ({gem1.x}, {gem1.y})");
-                return (gem1.x, gem1.y);
-            }
-            else if (gem2InMatch)
-            {
-                Debug.Log($"選擇目標寶石位置作為觸發點: ({gem2.x}, {gem2.y})");
-                return (gem2.x, gem2.y);
-            }
-
-            Debug.LogWarning($"無法確定觸發寶石，使用拖動寶石位置: ({gem1.x}, {gem1.y})");
-            return (gem1.x, gem1.y);
-        }
-
-        private void ProcessMatches(bool isHorizontalMove, int triggerX, int triggerY)
-        {
-            var matchGroups = FindMatchGroups(isHorizontalMove, triggerX, triggerY);
-
-            foreach (var group in matchGroups)
-            {
-                var (resourceType, isHorizontal, isVertical, _) =
-                    DetectMatchAndDetermineResourceType(group);
-
-                if (resourceType != -1)
-                {
-                    // 確定觸發點
-                    (int newTriggerX, int newTriggerY) = DetermineTriggerPoint(group);
-
-                    // 在觸發點創建資源寶石
-                    if (!ProcessResourceGemCreation(group, true, newTriggerX, newTriggerY, resourceType))
-                    {
-                        Debug.LogWarning($"無法在觸發點 ({newTriggerX}, {newTriggerY}) 創建資源寶石");
-                    }
-                }
-            }
-
-            StartCoroutine(ProcessMatchSequence());
-        }
     }
 }
