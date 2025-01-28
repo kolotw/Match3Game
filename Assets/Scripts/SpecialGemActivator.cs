@@ -71,45 +71,102 @@ namespace Match3Game
                     }
                     break;
 
-                case 2: // Cross
-                    for (int x = 0; x < board.width; x++)
+                //case 2: // Cross
+                //    for (int x = 0; x < board.width; x++)
+                //    {
+                //        var targetGem = board.gems[x, gem.y];
+                //        if (targetGem != null && ValidateGemPosition(targetGem, x, gem.y))
+                //        {
+                //            allDestroyedGems.Add(targetGem);
+                //            yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                //        }
+                //    }
+                //    for (int y = 0; y < board.height; y++)
+                //    {
+                //        var targetGem = board.gems[gem.x, y];
+                //        if (targetGem != null && targetGem != gem &&
+                //            ValidateGemPosition(targetGem, gem.x, y))
+                //        {
+                //            allDestroyedGems.Add(targetGem);
+                //            yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                //        }
+                //    }
+                //    break;
+
+                case 2: // Bomb
+                        // 先加入中心點
+                    if (ValidateGemPosition(gem, gem.x, gem.y))
                     {
-                        var targetGem = board.gems[x, gem.y];
-                        if (targetGem != null && ValidateGemPosition(targetGem, x, gem.y))
-                        {
-                            allDestroyedGems.Add(targetGem);
-                            yield return new WaitForSeconds(Board.COLLECT_DELAY);
-                        }
+                        allDestroyedGems.Add(gem);
+                        yield return new WaitForSeconds(Board.COLLECT_DELAY);
                     }
-                    for (int y = 0; y < board.height; y++)
+                    // 定義要檢查的相對座標
+                    int[] dx = { -1, -1, -1, 0, 0, 1, 1, 1 };
+                    int[] dy = { -1, 0, 1, -1, 1, -1, 0, 1 };
+
+                    // 檢查中心點周圍8個位置
+                    for (int i = 0; i < 8; i++)
                     {
-                        var targetGem = board.gems[gem.x, y];
-                        if (targetGem != null && targetGem != gem &&
-                            ValidateGemPosition(targetGem, gem.x, y))
+                        int newX = gem.x + dx[i];
+                        int newY = gem.y + dy[i];
+
+                        // 檢查座標是否在邊界內
+                        if (newX >= 0 && newX < board.width && newY >= 0 && newY < board.height)
                         {
-                            allDestroyedGems.Add(targetGem);
-                            yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                            var targetGem = board.gems[newX, newY];
+                            if (targetGem != null && ValidateGemPosition(targetGem, newX, newY))
+                            {
+                                allDestroyedGems.Add(targetGem);
+                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                            }
                         }
                     }
                     break;
+                ////Destroy All Gems
+                //List<Gem> bombGems = new List<Gem>();
+                //for (int x = 0; x < board.width; x++)
+                //{
+                //    for (int y = 0; y < board.height; y++)
+                //    {
+                //        var targetGem = board.gems[x, y];
+                //        if (targetGem != null && ValidateGemPosition(targetGem, x, y))
+                //        {
+                //            bombGems.Add(targetGem);
+                //        }
+                //    }
+                //}
+                //foreach (var bombGem in bombGems)
+                //{
+                //    allDestroyedGems.Add(bombGem);
+                //    yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                //}
+                //break;
+                case 3: // Rainbow
+                        // 先將 Rainbow 寶石自己加入刪除列表
+                    if (ValidateGemPosition(gem, gem.x, gem.y))
+                    {
+                        allDestroyedGems.Add(gem);
+                        yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                    }
 
-                case 3: // Bomb
-                    List<Gem> bombGems = new List<Gem>();
+                    // 取得被互動寶石的 ID
+                    int targetId = (board.gem1?.id == gem.id) ? board.gem2?.id ?? 1 : board.gem1?.id ?? 1;
+
+                    // 搜尋整個棋盤尋找相同 ID 的寶石
                     for (int x = 0; x < board.width; x++)
                     {
                         for (int y = 0; y < board.height; y++)
                         {
                             var targetGem = board.gems[x, y];
-                            if (targetGem != null && ValidateGemPosition(targetGem, x, y))
+                            if (targetGem != null &&
+                                targetGem.id == targetId &&
+                                targetGem != gem && // 確保不會重複刪除 Rainbow 寶石
+                                ValidateGemPosition(targetGem, x, y))
                             {
-                                bombGems.Add(targetGem);
+                                allDestroyedGems.Add(targetGem);
+                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
                             }
                         }
-                    }
-                    foreach (var bombGem in bombGems)
-                    {
-                        allDestroyedGems.Add(bombGem);
-                        yield return new WaitForSeconds(Board.COLLECT_DELAY);
                     }
                     break;
             }
