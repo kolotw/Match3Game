@@ -30,7 +30,7 @@ namespace Match3Game
 
             yield return board.StartCoroutine(board.FadeAndDestroyGems(allGems));
 
-            yield return board.StartCoroutine(board.FillEmptySpaces());
+            yield return board.StartCoroutine(board.FillEmptySpaces(-1));
             board.matchPredictor.ResetPredictionTimer();
         }
     }

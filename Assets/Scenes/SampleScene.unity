@@ -213,6 +213,7 @@ MonoBehaviour:
   matchPredictor: {fileID: 0}
   statusText: {fileID: 1768676954}
   gemsText: {fileID: 348896646}
+  playerPlayText: {fileID: 1358573173}
   gemPrefabs:
   - {fileID: 6396109961415817149, guid: 5d550a3750f0e334b94f52e8b95d22d1, type: 3}
   - {fileID: 2038196581494960673, guid: 42db343d095a7bc449566dcca1c7297b, type: 3}
@@ -225,6 +226,7 @@ MonoBehaviour:
   gem1: {fileID: 0}
   gem2: {fileID: 0}
   onError: 0
+  byPlayer: 0
 --- !u!1 &348896644
 GameObject:
   m_ObjectHideFlags: 0
@@ -702,6 +704,7 @@ RectTransform:
   - {fileID: 348896645}
   - {fileID: 1904426993}
   - {fileID: 1735093184}
+  - {fileID: 1358573172}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -740,6 +743,85 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1358573171
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1358573172}
+  - component: {fileID: 1358573174}
+  - component: {fileID: 1358573173}
+  m_Layer: 5
+  m_Name: byPlayer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1358573172
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1358573171}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1088441158}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
+  m_AnchoredPosition: {x: 30, y: -933}
+  m_SizeDelta: {x: 415.0661, y: 87.8196}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1358573173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1358573171}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FontData:
+    m_Font: {fileID: 12800000, guid: 9e5a35e9b92ae9949b52f0649e4060de, type: 3}
+    m_FontSize: 52
+    m_FontStyle: 0
+    m_BestFit: 0
+    m_MinSize: 4
+    m_MaxSize: 56
+    m_Alignment: 3
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 0
+    m_VerticalOverflow: 0
+    m_LineSpacing: 1
+  m_Text: byPlayer
+--- !u!222 &1358573174
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1358573171}
+  m_CullTransparentMesh: 1
 --- !u!1 &1735093183
 GameObject:
   m_ObjectHideFlags: 0
@@ -752,7 +834,7 @@ GameObject:
   - component: {fileID: 1735093186}
   - component: {fileID: 1735093185}
   m_Layer: 5
-  m_Name: X (1)
+  m_Name: Y
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

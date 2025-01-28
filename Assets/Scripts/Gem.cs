@@ -58,6 +58,8 @@ namespace Match3Game
             if (isAnimating || !Board.instance.hasMoveCompleted ||
         Board.instance == null) return;
 
+            Board.instance.byPlayer = true;
+
             // 點擊資源寶石時直接觸發效果
             //if (IsResourceGem && Input.GetMouseButtonDown(0))
             //{

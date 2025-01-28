@@ -101,7 +101,7 @@ namespace Match3Game
             yield return StartCoroutine(board.FadeAndDestroyGems(allGems));
 
             // 重新填滿棋盤
-            yield return StartCoroutine(board.FillEmptySpaces());
+            yield return StartCoroutine(board.FillEmptySpaces(-1));
             isResetting = false;
             ResetPredictionTimer();
         }
