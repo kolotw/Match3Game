@@ -213,7 +213,6 @@ MonoBehaviour:
   matchPredictor: {fileID: 0}
   statusText: {fileID: 1768676954}
   gemsText: {fileID: 348896646}
-  playerPlayText: {fileID: 1358573173}
   gemPrefabs:
   - {fileID: 6396109961415817149, guid: 5d550a3750f0e334b94f52e8b95d22d1, type: 3}
   - {fileID: 2038196581494960673, guid: 42db343d095a7bc449566dcca1c7297b, type: 3}
@@ -760,7 +759,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1358573172
 RectTransform:
   m_ObjectHideFlags: 0
@@ -839,7 +838,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1735093184
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1011,7 +1010,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1904426993
 RectTransform:
   m_ObjectHideFlags: 0

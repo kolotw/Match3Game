@@ -40,7 +40,7 @@ namespace Match3Game
         [SerializeField] public MatchPredictor matchPredictor;  // 匹配預測器
         [SerializeField] public Text statusText;  // 顯示遊戲狀態的UI文字
         [SerializeField] public Text gemsText;    // 顯示寶石數量的UI文字
-        [SerializeField] public Text playerPlayText;   
+        //[SerializeField] public Text playerPlayText;   
 
         // 寶石預製體數組
         [SerializeField] private GameObject[] gemPrefabs;       // 普通寶石的預製體
@@ -130,7 +130,7 @@ namespace Match3Game
             // 更新遊戲指標
             // 包括寶石數量、性能metrics等
             UpdateGameMetrics();
-            playerPlayText.text = byPlayer ? "Player's Play" : "AI's Play";
+            //playerPlayText.text = byPlayer ? "Player's Play" : "AI's Play";
         }
 
         // OnDestroy 方法：當遊戲物件被銷毀時調用
