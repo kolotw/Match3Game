@@ -71,9 +71,9 @@ namespace Match3Game
         public const float SWAP_DURATION = 0.2f;     // 寶石交換動畫持續時間
         public const float DESTROY_DELAY = 0.5f;     // 寶石消除的延遲時間
         public const float COLLECT_DELAY = 0.01f;    // 收集寶石的延遲時間
-        public const float COMPLETE_DELAY = 0.1f;   // 完成操作的延遲時間
+        public const float COMPLETE_DELAY = 0.03f;   // 完成操作的延遲時間
         private const float FPS_UPDATE_INTERVAL = 0.5f;  // 性能指標更新間隔
-        public const float FALL_DELAY = 0.1f;       // 寶石下落的延遲時間
+        public const float FALL_DELAY = 0.05f;       // 寶石下落的延遲時間
         #endregion
         #region Properties
         // 遊戲狀態屬性

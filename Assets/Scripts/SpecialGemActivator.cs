@@ -238,7 +238,7 @@ namespace Match3Game
                             if (targetGem != null && ValidateGemPosition(targetGem, x, y))
                             {
                                 allDestroyedGems.Add(targetGem);
-                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                                yield return new WaitForSeconds(Board.FALL_DELAY);
                             }
                         }
                     }
@@ -278,7 +278,7 @@ namespace Match3Game
                             if (targetGem != null && ValidateGemPosition(targetGem, x, y))
                             {
                                 allDestroyedGems.Add(targetGem);
-                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                                yield return new WaitForSeconds(Board.FALL_DELAY);
                             }
                         }
                     }
@@ -288,7 +288,7 @@ namespace Match3Game
                     // 先找出要放置炸彈的位置
                     List<(int x, int y)> bombPositions = new List<(int x, int y)>();
                     int attempts = 0;
-                    while (bombPositions.Count < 5 && attempts < 100) // 加入最大嘗試次數避免無限迴圈
+                    while (bombPositions.Count < 3 && attempts < 100) // 加入最大嘗試次數避免無限迴圈
                     {
                         attempts++;
                         int x = Random.Range(0, board.width);
@@ -343,7 +343,7 @@ namespace Match3Game
                                     if (targetGem != null && ValidateGemPosition(targetGem, newX, newY))
                                     {
                                         allDestroyedGems.Add(targetGem);
-                                        yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                                        yield return new WaitForSeconds(Board.FALL_DELAY);
                                     }
                                 }
                             }
