@@ -20,7 +20,7 @@ namespace Match3Game
                 Debug.LogWarning($"特殊寶石位置無效: ({gem.x}, {gem.y})");
                 return;
             }
-
+            
             board.StartCoroutine(ActivateSpecialGemSequentially(gem));
         }
         private bool ValidateGemPosition(Gem gem, int x, int y)
@@ -46,7 +46,7 @@ namespace Match3Game
             board.statusText.text = "消除中";
             // 0 : LineH, 1: LineV, 2: Bomb, 3: Rainbow, 4: Cross 5: Bomb big 5x5 6: Destroy All Gems 7: 橫 與 同類型消除 8: 直 與 同類型消除 9: 3x3 Bomb 10: 3x1 Bomb 11: 1x3 Bomb
             //Debug.Log(resType);
-
+            
             switch (resType)
             {
                 case 0: // LineH
@@ -113,6 +113,7 @@ namespace Match3Game
 
                     // 取得被互動寶石的 ID
                     int targetId = (board.gem1?.id == gem.id) ? board.gem2?.id ?? 1 : board.gem1?.id ?? 1;
+                    Debug.Log($"Rainbow 寶石的目標 ID：{targetId}");
 
                     // 搜尋整個棋盤尋找相同 ID 的寶石
                     for (int x = 0; x < board.width; x++)
@@ -126,10 +127,11 @@ namespace Match3Game
                                 ValidateGemPosition(targetGem, x, y))
                             {
                                 allDestroyedGems.Add(targetGem);
-                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                                //yield return new WaitForSeconds(Board.COLLECT_DELAY);
                             }
                         }
                     }
+                    yield return new WaitForSeconds(0.21f);
                     break;
 
                 case 4: // Cross
@@ -207,6 +209,7 @@ namespace Match3Game
                         yield return new WaitForSeconds(Board.COLLECT_DELAY);
                     }
                     break;
+
                 case 7:
                     // 橫 與 同類型消除
                     // 隨機決定要消除幾列
@@ -284,11 +287,12 @@ namespace Match3Game
                     }
 
                     break;
+
                 case 9:
                     // 先找出要放置炸彈的位置
                     List<(int x, int y)> bombPositions = new List<(int x, int y)>();
                     int attempts = 0;
-                    while (bombPositions.Count < 2 && attempts < 100) // 加入最大嘗試次數避免無限迴圈
+                    while (bombPositions.Count < 2 && attempts < 3) // 加入最大嘗試次數避免無限迴圈
                     {
                         attempts++;
                         int x = Random.Range(0, board.width);
@@ -350,7 +354,30 @@ namespace Match3Game
                         }
                     }
                     break;
+
                 case 10:
+                    // 以id102為主的橫向3行消除
+                    // 確定要消除的行範圍
+                    int startY = Mathf.Max(gem.y - 1, 0);  // 下邊界，不小於0
+                    int endY = Mathf.Min(gem.y + 1, board.height - 1);  // 上邊界，不超過棋盤高度
+
+                    // 消除指定範圍內的所有寶石
+                    for (int y = startY; y <= endY; y++)
+                    {
+                        for (int x = 0; x < board.width; x++)
+                        {
+                            var targetGem = board.gems[x, y];
+                            if (targetGem != null && ValidateGemPosition(targetGem, x, y))
+                            {
+                                allDestroyedGems.Add(targetGem);
+                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                            }
+                        }
+                    }
+
+                    break;
+
+                case 11:
                     // 以id102為主的縱向3行消除
                     // 確定要消除的列範圍
                     int startX = Mathf.Max(gem.x - 1, 0);  // 左邊界，不小於0
@@ -371,35 +398,23 @@ namespace Match3Game
                     }
                     break;
 
-                case 11:
-                    // 以id102為主的橫向3行消除
-                    // 確定要消除的行範圍
-                    int startY = Mathf.Max(gem.y - 1, 0);  // 下邊界，不小於0
-                    int endY = Mathf.Min(gem.y + 1, board.height - 1);  // 上邊界，不超過棋盤高度
-
-                    // 消除指定範圍內的所有寶石
-                    for (int y = startY; y <= endY; y++)
-                    {
-                        for (int x = 0; x < board.width; x++)
-                        {
-                            var targetGem = board.gems[x, y];
-                            if (targetGem != null && ValidateGemPosition(targetGem, x, y))
-                            {
-                                allDestroyedGems.Add(targetGem);
-                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
-                            }
-                        }
-                    }
-                    
-                    break;
+                
             }
-
+            Debug.Log("作用中: " + gem.id);
             board.statusText.text = "消除中";
             if (allDestroyedGems.Count > 0)
             {
-                yield return board.StartCoroutine(board.FadeAndDestroyGems(allDestroyedGems));
+                //yield return board.StartCoroutine(board.FadeAndDestroyGems(allDestroyedGems));
+                // 啟動動畫但不等待它完成
+                board.StartCoroutine(board.FadeAndDestroyGems(allDestroyedGems));
             }
             yield return new WaitForSeconds(Board.COMPLETE_DELAY);
+
+            //if (allDestroyedGems.Count > 0)
+            //{
+            //    yield return board.WaitForFadeAndDestroy(allDestroyedGems);
+            //}
+            //yield return new WaitForSeconds(Board.COMPLETE_DELAY);
         }
     }
 }
