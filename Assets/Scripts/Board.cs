@@ -69,10 +69,11 @@ namespace Match3Game
 
         // 遊戲常數：定義各種動畫和操作的持續時間
         public const float SWAP_DURATION = 0.2f;     // 寶石交換動畫持續時間
-        public const float DESTROY_DELAY = 0.2f;     // 寶石消除的延遲時間
+        public const float DESTROY_DELAY = 0.5f;     // 寶石消除的延遲時間
         public const float COLLECT_DELAY = 0.01f;    // 收集寶石的延遲時間
-        public const float COMPLETE_DELAY = 0.01f;   // 完成操作的延遲時間
+        public const float COMPLETE_DELAY = 0.1f;   // 完成操作的延遲時間
         private const float FPS_UPDATE_INTERVAL = 0.5f;  // 性能指標更新間隔
+        public const float FALL_DELAY = 0.1f;       // 寶石下落的延遲時間
         #endregion
         #region Properties
         // 遊戲狀態屬性
@@ -389,8 +390,60 @@ namespace Match3Game
         private bool ProcessSpecialGems(Gem first, Gem second)
         {
             Debug.Log($"處理特殊寶石：{first.id}, {second.id}");
-            // 100 LineH, 101 LineV, 102 Bomb, 103 Rainbow, 104 Cross, 105 Bomb big, 106 Clear All
-            // 處理特殊寶石的邏輯
+
+            // 如果都不是特殊寶石，直接返回
+            if (first.id < 100 && second.id < 100)
+            {
+                return false;
+            }
+
+            // 新增規則9：Bomb (id=102) 和 Rainbow (id=103) 組合變成 id=108
+            if ((first.id == 102 && second.id == 103) || (first.id == 103 && second.id == 102))
+            {
+                first.id = 109;
+                specialGemActivator.ActivateSpecialGem(first);
+                return true;
+            }
+
+            // 規則6：兩個 Rainbow (id=103) 組合變成 Clear All (id=106)
+            if (first.id == 103 && second.id == 103)
+            {
+                first.id = 106; // Clear All
+                specialGemActivator.ActivateSpecialGem(first);
+                return true;
+            }
+            // 新增規則7：LineH (id=100) 和 Rainbow (id=103) 組合變成 id=107
+            if ((first.id == 100 && second.id == 103) || (first.id == 103 && second.id == 100))
+            {
+                first.id = 107;
+                specialGemActivator.ActivateSpecialGem(first);
+                return true;
+            }
+
+            // 新增規則8：LineV (id=101) 和 Rainbow (id=103) 組合變成 id=108
+            if ((first.id == 101 && second.id == 103) || (first.id == 103 && second.id == 101))
+            {
+                first.id = 108;
+                specialGemActivator.ActivateSpecialGem(first);
+                return true;
+            }
+            // 規則5：兩個 Bomb (id=102) 組合變成 Big Bomb (id=105)
+            if (first.id == 102 && second.id == 102)
+            {
+                first.id = 105; // Big Bomb
+                specialGemActivator.ActivateSpecialGem(first);
+                return true;
+            }
+
+            // 規則4：LineH (id=100) 或 LineV (id=101) 的組合變成 Cross (id=104)
+            if ((first.id == 100 || first.id == 101) && (second.id == 100 || second.id == 101))
+            {
+                first.id = 104; // Cross
+                specialGemActivator.ActivateSpecialGem(first);
+                return true;
+            }
+
+            // 規則3：兩個不同的特殊寶石，各別執行功能
             if (first.id >= 100 && second.id >= 100 && first.id != second.id)
             {
                 specialGemActivator.ActivateSpecialGem(first);
@@ -398,38 +451,15 @@ namespace Match3Game
                 return true;
             }
 
-            if (first.id == 102 && second.id == 102)
-            {
-                first.id = 105; //big bomb
-                specialGemActivator.ActivateSpecialGem(first);
-                return true;
-            }
-            if (first.id == 103 && second.id == 103)
-            {
-                first.id = 106; //Clear All
-                specialGemActivator.ActivateSpecialGem(first);
-                return true;
-            }
-            if (first.id == 103 || second.id == 103)
-            {
-                specialGemActivator.ActivateSpecialGem(first.id == 103 ? first : second);
-                return true;
-            }
+            // 單一特殊寶石的處理
             if (first.id >= 100 || second.id >= 100)
             {
-                if(first.id > 101 || second.id > 101)
-                {
-                    specialGemActivator.ActivateSpecialGem(first.id >= 102 ? first : second);
-                    return true;
-                }
-                else
-                {
-                    first.id = 104; //直與橫 cross
-                    specialGemActivator.ActivateSpecialGem(first.id >= 100 ? first : second);
-                    return true;
-                }
-                
+                // 選擇特殊寶石來執行
+                Gem specialGem = (first.id >= 100) ? first : second;
+                specialGemActivator.ActivateSpecialGem(specialGem);
+                return true;
             }
+
             return false;
         }
         private void FinalizeSwap(bool successful)
@@ -578,7 +608,7 @@ namespace Match3Game
                         
 
                         // 短暫等待，增加寶石掉落的視覺效果
-                        yield return new WaitForSeconds(0.1f);
+                        yield return new WaitForSeconds(FALL_DELAY);
                     }
                 }
             }
@@ -646,7 +676,7 @@ namespace Match3Game
             // 使用協程確保動畫平滑
             StartCoroutine(gems[x, y].AnimateMove(
                 new Vector3(x, y, 0),  // 目標位置
-                0.3f / gemMoveSpeed     // 動畫持續時間
+                FALL_DELAY     // 動畫持續時間
             ));
 
             // 增加掉落延遲，使多個寶石有不同的掉落間隔
@@ -1037,7 +1067,7 @@ namespace Match3Game
             // 使用協程確保動畫平滑進行
             yield return StartCoroutine(gem.AnimateMove(
                 new Vector3(x, y, 0),  // 目標位置
-                0.3f / gemMoveSpeed     // 動畫持續時間，與遊戲速度關聯
+                FALL_DELAY     // 動畫持續時間，與遊戲速度關聯  
             ));
 
             // 動畫完成後調用回調函數
@@ -1158,7 +1188,6 @@ namespace Match3Game
             {
                 if (gem != null && gem.gameObject != null)
                 {
-                    Debug.Log(gem.id);
                     if(gem.id >= 100)
                     { 
                         specialGemActivator.ActivateSpecialGem(gem); 

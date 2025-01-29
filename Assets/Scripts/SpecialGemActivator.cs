@@ -207,6 +207,149 @@ namespace Match3Game
                         yield return new WaitForSeconds(Board.COLLECT_DELAY);
                     }
                     break;
+                case 7:
+                    // 橫 與 同類型消除
+                    // 隨機決定要消除幾行
+                    int linesToDestroy = Random.Range(2, board.height - 2); // 至少消除1行，最多消除整個棋盤的行數
+                    Debug.Log($"要消除的行數：{linesToDestroy}");
+
+                    // 創建一個包含所有可能行號的列表，並打亂順序
+                    List<int> allLines = new List<int>();
+                    for (int y = 0; y < board.height; y++)
+                    {
+                        allLines.Add(y);
+                    }
+                    // 打亂列表順序
+                    for (int i = allLines.Count - 1; i > 0; i--)
+                    {
+                        int randomIndex = Random.Range(0, i + 1);
+                        int temp = allLines[i];
+                        allLines[i] = allLines[randomIndex];
+                        allLines[randomIndex] = temp;
+                    }
+
+                    // 取前 linesToDestroy 個行號進行消除
+                    for (int i = 0; i < linesToDestroy; i++)
+                    {
+                        int y = allLines[i];
+                        for (int x = 0; x < board.width; x++)
+                        {
+                            var targetGem = board.gems[x, y];
+                            if (targetGem != null && ValidateGemPosition(targetGem, x, y))
+                            {
+                                allDestroyedGems.Add(targetGem);
+                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                            }
+                        }
+                    }
+                    
+                    
+
+                    break;
+
+                case 8:
+                    // 直 與 同類型消除
+                    // 隨機決定要消除幾列
+                    int columnsToDestroy = Random.Range(2, board.width - 2); // 至少消除1列，最多消除整個棋盤的列數
+                    Debug.Log($"要消除的列數：{columnsToDestroy}");
+
+                    // 創建一個包含所有可能列號的列表，並打亂順序
+                    List<int> allColumns = new List<int>();
+                    for (int x = 0; x < board.width; x++)
+                    {
+                        allColumns.Add(x);
+                    }
+                    // 打亂列表順序
+                    for (int i = allColumns.Count - 1; i > 0; i--)
+                    {
+                        int randomIndex = Random.Range(0, i + 1);
+                        int temp = allColumns[i];
+                        allColumns[i] = allColumns[randomIndex];
+                        allColumns[randomIndex] = temp;
+                    }
+
+                    // 取前 columnsToDestroy 個列號進行消除
+                    for (int i = 0; i < columnsToDestroy; i++)
+                    {
+                        int x = allColumns[i];
+                        for (int y = 0; y < board.height; y++)
+                        {
+                            var targetGem = board.gems[x, y];
+                            if (targetGem != null && ValidateGemPosition(targetGem, x, y))
+                            {
+                                allDestroyedGems.Add(targetGem);
+                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                            }
+                        }
+                    }
+
+                    break;
+                case 9:
+                    // 先找出要放置炸彈的位置
+                    List<(int x, int y)> bombPositions = new List<(int x, int y)>();
+                    int attempts = 0;
+                    while (bombPositions.Count < 5 && attempts < 100) // 加入最大嘗試次數避免無限迴圈
+                    {
+                        attempts++;
+                        int x = Random.Range(0, board.width);
+                        int y = Random.Range(0, board.height);
+
+                        // 檢查這個位置是否有效且未被選中
+                        if (board.gems[x, y] != null && !bombPositions.Contains((x, y)))
+                        {
+                            bombPositions.Add((x, y));
+                        }
+                    }
+
+                    Debug.Log($"找到 {bombPositions.Count} 個位置來放置炸彈");
+
+                    // 先將所有位置的寶石變成炸彈
+                    foreach (var pos in bombPositions)
+                    {
+                        if (board.gems[pos.x, pos.y] != null)
+                        {
+                            board.gems[pos.x, pos.y].id = 102;
+                        }
+                    }
+
+                    // 等待一小段時間讓玩家看到炸彈生成
+                    yield return new WaitForSeconds(0.5f);
+
+                    // 再依序引爆每個炸彈
+                    foreach (var pos in bombPositions)
+                    {
+                        var bombGem = board.gems[pos.x, pos.y];
+                        if (bombGem != null)
+                        {
+                            // 處理中心點
+                            if (ValidateGemPosition(bombGem, pos.x, pos.y))
+                            {
+                                allDestroyedGems.Add(bombGem);
+                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                            }
+
+                            // 處理周圍8格
+                            int[] cx = { -1, -1, -1, 0, 0, 1, 1, 1 };
+                            int[] cy = { -1, 0, 1, -1, 1, -1, 0, 1 };
+
+                            for (int i = 0; i < 8; i++)
+                            {
+                                int newX = pos.x + cx[i];
+                                int newY = pos.y + cy[i];
+
+                                if (newX >= 0 && newX < board.width && newY >= 0 && newY < board.height)
+                                {
+                                    var targetGem = board.gems[newX, newY];
+                                    if (targetGem != null && ValidateGemPosition(targetGem, newX, newY))
+                                    {
+                                        allDestroyedGems.Add(targetGem);
+                                        yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    break;
             }
 
             board.statusText.text = "消除中";
