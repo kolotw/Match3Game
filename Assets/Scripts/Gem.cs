@@ -117,51 +117,33 @@ namespace Match3Game
         }
         public IEnumerator AnimateMove(Vector3 target, float duration)
         {
-            // 早期檢查，防止無效協程啟動
-            if (this == null || gameObject == null)
-            {
-                yield break;
-            }
-
-            if (duration <= 0)
-            {
-                if (this != null && gameObject != null)
-                {
-                    transform.position = target;
-                }
-                isAnimating = false;
-                yield break;
-            }
-
-            Vector3 start = transform.position;
-            float elapsed = 0;
+            if (!IsValid()) yield break;
 
             isAnimating = true;
-            while (elapsed < duration)
+            var startPos = transform.position;
+            float elapsed = 0;
+
+            while (elapsed < duration && IsValid())
             {
-                // 每次迭代都進行嚴格檢查
-                if (this == null || gameObject == null)
-                {
-                    yield break;
-                }
-
                 elapsed += Time.deltaTime;
-                float t = elapsed / duration;
-
-                // 再次檢查，防止空引用
-                if (this != null && gameObject != null)
-                {
-                    transform.position = Vector3.Lerp(start, target, t);
-                }
+                float t = Mathf.Clamp01(elapsed / duration);
+                transform.position = Vector3.Lerp(startPos, target, t);
                 yield return null;
             }
 
-            // 最終確保位置設置和動畫狀態更新
-            if (this != null && gameObject != null)
+            if (IsValid())
             {
                 transform.position = target;
+                isAnimating = false;
             }
-            isAnimating = false;
+        }
+
+        private bool IsValid()
+        {
+            return this != null &&
+                   gameObject != null &&
+                   Board.instance != null &&
+                   Board.instance.gems[x, y] == this;
         }
 
     }

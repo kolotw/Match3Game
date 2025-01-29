@@ -44,7 +44,7 @@ namespace Match3Game
             int resType = gem.id - 100;
             List<Gem> allDestroyedGems = new List<Gem>();
             board.statusText.text = "消除中";
-            // 0 : LineH, 1: LineV, 2: Bomb, 3: Rainbow, 4: Cross 5: Bomb big
+            // 0 : LineH, 1: LineV, 2: Bomb, 3: Rainbow, 4: Cross 5: Bomb big 5x5 6: Destroy All Gems 7: 橫 與 同類型消除 8: 直 與 同類型消除 9: 3x3 Bomb 10: 3x1 Bomb 11: 1x3 Bomb
             //Debug.Log(resType);
 
             switch (resType)
@@ -209,9 +209,9 @@ namespace Match3Game
                     break;
                 case 7:
                     // 橫 與 同類型消除
-                    // 隨機決定要消除幾行
+                    // 隨機決定要消除幾列
                     int linesToDestroy = Random.Range(2, board.height - 2); // 至少消除1行，最多消除整個棋盤的行數
-                    Debug.Log($"要消除的行數：{linesToDestroy}");
+                    Debug.Log($"要消除的列數：{linesToDestroy}");
 
                     // 創建一個包含所有可能行號的列表，並打亂順序
                     List<int> allLines = new List<int>();
@@ -249,11 +249,11 @@ namespace Match3Game
 
                 case 8:
                     // 直 與 同類型消除
-                    // 隨機決定要消除幾列
+                    // 隨機決定要消除幾行
                     int columnsToDestroy = Random.Range(2, board.width - 2); // 至少消除1列，最多消除整個棋盤的列數
-                    Debug.Log($"要消除的列數：{columnsToDestroy}");
+                    Debug.Log($"要消除的行數：{columnsToDestroy}");
 
-                    // 創建一個包含所有可能列號的列表，並打亂順序
+                    // 創建一個包含所有可能行號的列表，並打亂順序
                     List<int> allColumns = new List<int>();
                     for (int x = 0; x < board.width; x++)
                     {
@@ -288,7 +288,7 @@ namespace Match3Game
                     // 先找出要放置炸彈的位置
                     List<(int x, int y)> bombPositions = new List<(int x, int y)>();
                     int attempts = 0;
-                    while (bombPositions.Count < 3 && attempts < 100) // 加入最大嘗試次數避免無限迴圈
+                    while (bombPositions.Count < 2 && attempts < 100) // 加入最大嘗試次數避免無限迴圈
                     {
                         attempts++;
                         int x = Random.Range(0, board.width);
@@ -301,7 +301,7 @@ namespace Match3Game
                         }
                     }
 
-                    Debug.Log($"找到 {bombPositions.Count} 個位置來放置炸彈");
+                    //Debug.Log($"找到 {bombPositions.Count} 個位置來放置炸彈");
 
                     // 先將所有位置的寶石變成炸彈
                     foreach (var pos in bombPositions)
@@ -349,6 +349,48 @@ namespace Match3Game
                             }
                         }
                     }
+                    break;
+                case 10:
+                    // 以id102為主的縱向3行消除
+                    // 確定要消除的列範圍
+                    int startX = Mathf.Max(gem.x - 1, 0);  // 左邊界，不小於0
+                    int endX = Mathf.Min(gem.x + 1, board.width - 1);  // 右邊界，不超過棋盤寬度
+
+                    // 消除指定範圍內的所有寶石
+                    for (int x = startX; x <= endX; x++)
+                    {
+                        for (int y = 0; y < board.height; y++)
+                        {
+                            var targetGem = board.gems[x, y];
+                            if (targetGem != null && ValidateGemPosition(targetGem, x, y))
+                            {
+                                allDestroyedGems.Add(targetGem);
+                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                            }
+                        }
+                    }
+                    break;
+
+                case 11:
+                    // 以id102為主的橫向3行消除
+                    // 確定要消除的行範圍
+                    int startY = Mathf.Max(gem.y - 1, 0);  // 下邊界，不小於0
+                    int endY = Mathf.Min(gem.y + 1, board.height - 1);  // 上邊界，不超過棋盤高度
+
+                    // 消除指定範圍內的所有寶石
+                    for (int y = startY; y <= endY; y++)
+                    {
+                        for (int x = 0; x < board.width; x++)
+                        {
+                            var targetGem = board.gems[x, y];
+                            if (targetGem != null && ValidateGemPosition(targetGem, x, y))
+                            {
+                                allDestroyedGems.Add(targetGem);
+                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                            }
+                        }
+                    }
+                    
                     break;
             }
 
