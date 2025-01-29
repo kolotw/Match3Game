@@ -388,10 +388,26 @@ namespace Match3Game
         }
         private bool ProcessSpecialGems(Gem first, Gem second)
         {
+            Debug.Log($"處理特殊寶石：{first.id}, {second.id}");
+            // 100 LineH, 101 LineV, 102 Bomb, 103 Rainbow, 104 Cross, 105 Bomb big, 106 Clear All
             // 處理特殊寶石的邏輯
-            if (first.id == 102 || second.id == 102)
+            if (first.id >= 100 && second.id >= 100 && first.id != second.id)
             {
-                specialGemActivator.ActivateSpecialGem(first.id == 102 ? first : second);
+                specialGemActivator.ActivateSpecialGem(first);
+                specialGemActivator.ActivateSpecialGem(second);
+                return true;
+            }
+
+            if (first.id == 102 && second.id == 102)
+            {
+                first.id = 105; //big bomb
+                specialGemActivator.ActivateSpecialGem(first);
+                return true;
+            }
+            if (first.id == 103 && second.id == 103)
+            {
+                first.id = 106; //Clear All
+                specialGemActivator.ActivateSpecialGem(first);
                 return true;
             }
             if (first.id == 103 || second.id == 103)
@@ -401,8 +417,18 @@ namespace Match3Game
             }
             if (first.id >= 100 || second.id >= 100)
             {
-                specialGemActivator.ActivateSpecialGem(first.id >= 100 ? first : second);
-                return true;
+                if(first.id > 101 || second.id > 101)
+                {
+                    specialGemActivator.ActivateSpecialGem(first.id >= 102 ? first : second);
+                    return true;
+                }
+                else
+                {
+                    first.id = 104; //直與橫 cross
+                    specialGemActivator.ActivateSpecialGem(first.id >= 100 ? first : second);
+                    return true;
+                }
+                
             }
             return false;
         }
@@ -422,7 +448,9 @@ namespace Match3Game
             // 特殊寶石（ID >= 100）不進行匹配檢查
             // 這是為了防止特殊寶石意外觸發消除邏輯
             if (isSwitching && (gem1.id >= 100 || gem2.id >= 100))
-                return false;
+            { 
+                return false; 
+            }
 
             // 使用匹配查找器尋找所有可能的匹配
             var matches = matchFinder.FindAllMatches();
@@ -657,7 +685,7 @@ namespace Match3Game
 
             // 處理每個匹配的寶石
             foreach (var gem in matchedGems)
-            {
+            {                
                 // 確保寶石有效且未被處理過
                 if (gem != null && !processedGems.Contains(gem) && gems[gem.x, gem.y] == gem)
                 {
@@ -684,7 +712,7 @@ namespace Match3Game
                 if (matchedGroup.Count >= 4)
                 {
                     var (resourceType, isHorizontal, isVertical, _) = DetectMatchAndDetermineResourceType(matchedGroup);
-                    Debug.Log($"本回合匹配統計：寶石 ID {group.Key}: 匹配數量 = {matchedGroup.Count} : 類型 = {resourceType}");
+                    Debug.Log($"本回合匹配統計：寶石 ID {group.Key}: 匹配數量 = {matchedGroup.Count} : 類型 = {resourceType} :水平 = {isHorizontal} : 垂直 = {isVertical} ");
 
                     // 根據觸發來源決定觸發點位置
                     if (!byPlayer)
@@ -698,12 +726,12 @@ namespace Match3Game
                         }
                         triggerX = sumX / matchedGroup.Count;
                         triggerY = sumY / matchedGroup.Count;
-                        Debug.Log($"系統觸發匹配，使用平均位置作為觸發點：({triggerX}, {triggerY})");
+                        //Debug.Log($"系統觸發匹配，使用平均位置作為觸發點：({triggerX}, {triggerY})");
                     }
 
                     if (TryCreateGemAtTriggerPoint(resourceType))
                     {
-                        Debug.Log($"成功在觸發點 ({triggerX}, {triggerY}) 創建資源寶石，類型: {resourceType}");
+                        //Debug.Log($"成功在觸發點 ({triggerX}, {triggerY}) 創建資源寶石，類型: {resourceType}");
                     }
                     else
                     {
@@ -725,11 +753,11 @@ namespace Match3Game
             yield return StartCoroutine(MakeGemsFall());
             if (!byPlayer)
             {
-                Debug.Log("系統操作結束");
+                //Debug.Log("系統操作結束");
             }
             else
             {
-                Debug.Log("玩家操作結束，重置 byPlayer");
+                //Debug.Log("玩家操作結束，重置 byPlayer");
                 byPlayer = false;
             }
         }
@@ -881,15 +909,23 @@ namespace Match3Game
             }
 
             // 決定資源寶石類型
-            // 0 LineH, 1 LineV, 2 Bomb, 3 Rainbown
+            // 0 LineH, 1 LineV, 2 Bomb, 3 Rainbow
             int resourceType;
             if (isCornerMatch && gems.Count >= 5)
             {
-                resourceType = 2; // Cross
+                if (gems.Count > 6)
+                {
+                    resourceType = 3; // Rainbow
+                }
+                else
+                {
+                    resourceType = 2; // Bomb
+                    //resourceType = 2; // Cross
+                }
             }
             else if ((isHorizontal || isVertical) && gems.Count >= 5)
             {
-                resourceType = 3; // Bomb
+                resourceType = 3; // Rainbow
             }
             else if (isHorizontal)
             {
@@ -1059,7 +1095,7 @@ namespace Match3Game
                         else
                         {
                             // 記錄渲染器遺失的警告，幫助追蹤潛在問題
-                            Debug.LogWarning($"寶石 ({gem.x}, {gem.y}) 的 SpriteRenderer 已遺失");
+                            //Debug.LogWarning($"寶石 ({gem.x}, {gem.y}) 的 SpriteRenderer 已遺失");
                         }
                     }
                     catch (Exception e)
@@ -1122,6 +1158,11 @@ namespace Match3Game
             {
                 if (gem != null && gem.gameObject != null)
                 {
+                    Debug.Log(gem.id);
+                    if(gem.id >= 100)
+                    { 
+                        specialGemActivator.ActivateSpecialGem(gem); 
+                    }
                     Destroy(gem.gameObject);
                 }
             }

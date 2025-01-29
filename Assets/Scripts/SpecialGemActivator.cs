@@ -44,6 +44,8 @@ namespace Match3Game
             int resType = gem.id - 100;
             List<Gem> allDestroyedGems = new List<Gem>();
             board.statusText.text = "消除中";
+            // 0 : LineH, 1: LineV, 2: Bomb, 3: Rainbow, 4: Cross 5: Bomb big
+            //Debug.Log(resType);
 
             switch (resType)
             {
@@ -69,29 +71,7 @@ namespace Match3Game
                             yield return new WaitForSeconds(Board.COLLECT_DELAY);
                         }
                     }
-                    break;
-
-                //case 2: // Cross
-                //    for (int x = 0; x < board.width; x++)
-                //    {
-                //        var targetGem = board.gems[x, gem.y];
-                //        if (targetGem != null && ValidateGemPosition(targetGem, x, gem.y))
-                //        {
-                //            allDestroyedGems.Add(targetGem);
-                //            yield return new WaitForSeconds(Board.COLLECT_DELAY);
-                //        }
-                //    }
-                //    for (int y = 0; y < board.height; y++)
-                //    {
-                //        var targetGem = board.gems[gem.x, y];
-                //        if (targetGem != null && targetGem != gem &&
-                //            ValidateGemPosition(targetGem, gem.x, y))
-                //        {
-                //            allDestroyedGems.Add(targetGem);
-                //            yield return new WaitForSeconds(Board.COLLECT_DELAY);
-                //        }
-                //    }
-                //    break;
+                    break;              
 
                 case 2: // Bomb
                         // 先加入中心點
@@ -122,25 +102,7 @@ namespace Match3Game
                         }
                     }
                     break;
-                ////Destroy All Gems
-                //List<Gem> bombGems = new List<Gem>();
-                //for (int x = 0; x < board.width; x++)
-                //{
-                //    for (int y = 0; y < board.height; y++)
-                //    {
-                //        var targetGem = board.gems[x, y];
-                //        if (targetGem != null && ValidateGemPosition(targetGem, x, y))
-                //        {
-                //            bombGems.Add(targetGem);
-                //        }
-                //    }
-                //}
-                //foreach (var bombGem in bombGems)
-                //{
-                //    allDestroyedGems.Add(bombGem);
-                //    yield return new WaitForSeconds(Board.COLLECT_DELAY);
-                //}
-                //break;
+
                 case 3: // Rainbow
                         // 先將 Rainbow 寶石自己加入刪除列表
                     if (ValidateGemPosition(gem, gem.x, gem.y))
@@ -167,6 +129,82 @@ namespace Match3Game
                                 yield return new WaitForSeconds(Board.COLLECT_DELAY);
                             }
                         }
+                    }
+                    break;
+
+                case 4: // Cross
+                    for (int x = 0; x < board.width; x++)
+                    {
+                        var targetGem = board.gems[x, gem.y];
+                        if (targetGem != null && ValidateGemPosition(targetGem, x, gem.y))
+                        {
+                            allDestroyedGems.Add(targetGem);
+                            yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                        }
+                    }
+                    for (int y = 0; y < board.height; y++)
+                    {
+                        var targetGem = board.gems[gem.x, y];
+                        if (targetGem != null && targetGem != gem &&
+                            ValidateGemPosition(targetGem, gem.x, y))
+                        {
+                            allDestroyedGems.Add(targetGem);
+                            yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                        }
+                    }
+                    break;
+
+                case 5: // Bomb big 5x5
+                        // 先加入中心點
+                    if (ValidateGemPosition(gem, gem.x, gem.y))
+                    {
+                        allDestroyedGems.Add(gem);
+                        yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                    }
+
+                    // 獲取有效的檢查範圍
+                    int minX = gem.x - 2 < 0 ? 0 : gem.x - 2;
+                    int maxX = gem.x + 2 >= board.width ? board.width - 1 : gem.x + 2;
+                    int minY = gem.y - 2 < 0 ? 0 : gem.y - 2;
+                    int maxY = gem.y + 2 >= board.height ? board.height - 1 : gem.y + 2;
+
+                    // 遍歷有效範圍內的所有格子
+                    for (int x = minX; x <= maxX; x++)
+                    {
+                        for (int y = minY; y <= maxY; y++)
+                        {
+                            // 跳過中心點，因為已經檢查過了
+                            if (x == gem.x && y == gem.y)
+                                continue;
+
+                            var targetGem = board.gems[x, y];
+                            if (targetGem != null && ValidateGemPosition(targetGem, x, y))
+                            {
+                                allDestroyedGems.Add(targetGem);
+                                yield return new WaitForSeconds(Board.COLLECT_DELAY);
+                            }
+                        }
+                    }
+                    break;
+
+                case 6:
+                    //Destroy All Gems
+                    List<Gem> bombGems = new List<Gem>();
+                    for (int x = 0; x < board.width; x++)
+                    {
+                        for (int y = 0; y < board.height; y++)
+                        {
+                            var targetGem = board.gems[x, y];
+                            if (targetGem != null && ValidateGemPosition(targetGem, x, y))
+                            {
+                                bombGems.Add(targetGem);
+                            }
+                        }
+                    }
+                    foreach (var bombGem in bombGems)
+                    {
+                        allDestroyedGems.Add(bombGem);
+                        yield return new WaitForSeconds(Board.COLLECT_DELAY);
                     }
                     break;
             }
