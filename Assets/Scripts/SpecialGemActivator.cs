@@ -56,26 +56,12 @@ namespace Match3Game
             switch (resType)
             {
                 case 0: // LineH
-                    for (int x = 0; x < board.width; x++)
-                    {
-                        var targetGem = board.gems[x, gem.y];
-                        if (targetGem != null && ValidateGemPosition(targetGem, x, gem.y))
-                        {
-                            allDestroyedGems.Add(targetGem);
-                        }
-                    }
+                    lineH(allDestroyedGems, gem);
                     break;
 
                 case 1: // LineV
                     //如果兩個寶石都是直線寶石，則消除十字形
-                    for (int y = 0; y < board.height; y++)
-                    {
-                        var targetGem = board.gems[gem.x, y];
-                        if (targetGem != null && ValidateGemPosition(targetGem, gem.x, y))
-                        {
-                            allDestroyedGems.Add(targetGem);
-                        }
-                    }
+                    lineV(allDestroyedGems, gem);
                     break;
 
                 case 2: // Bomb
@@ -343,6 +329,29 @@ namespace Match3Game
                 yield return board.StartCoroutine(board.FadeAndDestroyGems(allDestroyedGems));
             }
         }
-
+        List<Gem> lineV(List<Gem> allDestroyedGems, Gem gem)
+        {
+            for (int y = 0; y < board.height; y++)
+            {
+                var targetGem = board.gems[gem.x, y];
+                if (targetGem != null && ValidateGemPosition(targetGem, gem.x, y))
+                {
+                    allDestroyedGems.Add(targetGem);
+                }
+            }
+            return allDestroyedGems;
+        }
+        List<Gem> lineH(List<Gem> allDestroyedGems, Gem gem)
+        {
+            for (int x = 0; x < board.width; x++)
+            {
+                var targetGem = board.gems[x, gem.y];
+                if (targetGem != null && ValidateGemPosition(targetGem, x, gem.y))
+                {
+                    allDestroyedGems.Add(targetGem);
+                }
+            }
+            return allDestroyedGems;
+        }
     }
 }

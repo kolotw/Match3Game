@@ -447,10 +447,10 @@ namespace Match3Game
             
             // 不同寶石組合
             {(100, 101), 104}, // LineH + LineV = Cross
-            {(100, 102), 107}, // LineH + Bomb = RandomHLines
-            {(100, 103), 110}, // LineH + Rainbow = ThreeHLines
-            {(101, 102), 108}, // LineV + Bomb = RandomVLines
-            {(101, 103), 111}, // LineV + Rainbow = ThreeVLines
+            {(100, 102), 110}, // LineH + Bomb = RandomHLines 
+            {(100, 103), 107}, // LineH + Rainbow = ThreeHLines 
+            {(101, 102), 111}, // LineV + Bomb = RandomVLines 
+            {(101, 103), 108}, // LineV + Rainbow = ThreeVLines 
             {(102, 103), 109}, // Bomb + Rainbow = MultiBomb
         };
 
@@ -459,10 +459,16 @@ namespace Match3Game
                     (second.id < 100 && first.id >= 100 && first.id <= 103))
                 {
                     // 使用特殊寶石的ID作為結果
-                    var specialGemId = Math.Max(first.id, second.id);
-                    first.id = specialGemId;
+                    //var specialGemId = Math.Max(first.id, second.id);
+                    //first.id = specialGemId;
+                    if (second.id > first.id)
+                    {
+                        // 如果 second 的 ID 更大，直接將 first 替換為 second
+                        first = second;
+                    }
                     specialGemActivator.ActivateSpecialGem(first);
-                    Debug.Log($"處理一般寶石與特殊寶石組合：普通+{specialGemId} = {specialGemId}");
+
+                    Debug.Log($"處理一般寶石與特殊寶石組合：普通+{first.id} = {first.x},{first.y} byPlayer: {byPlayer}");
                     return true;
                 }
 
