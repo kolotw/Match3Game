@@ -43,7 +43,7 @@ namespace Match3Game
         //[SerializeField] public Text playerPlayText;   
 
         // 寶石預製體數組
-        [SerializeField] private GameObject[] gemPrefabs;       // 普通寶石的預製體
+        [SerializeField] public GameObject[] gemPrefabs;       // 普通寶石的預製體
         [SerializeField] private GameObject[] resGemPrefabs;    // 特殊資源寶石的預製體
 
         // 遊戲狀態管理的關鍵變數
@@ -312,7 +312,21 @@ namespace Match3Game
         {
             try
             {
-                // 驗證交換狀態
+                // 保存交換寶石的參考
+                var swappedGem1 = gem1;
+                var swappedGem2 = gem2;
+
+                // 優先檢查特殊寶石的組合
+                if (swappedGem1.id >= 100 || swappedGem2.id >= 100)
+                {
+                    if (ProcessSpecialGems(swappedGem1, swappedGem2))
+                    {
+                        FinalizeSwap(true);
+                        return;
+                    }
+                }
+
+                // 對於普通寶石，驗證交換狀態
                 if (!IsValidSwapState())
                 {
                     Debug.LogWarning($"交換狀態無效: gem1={gem1?.id ?? -1} at ({gem1?.x ?? -1},{gem1?.y ?? -1}), " +
@@ -322,26 +336,12 @@ namespace Match3Game
                     return;
                 }
 
-                // 保存交換寶石的參考
-                var swappedGem1 = gem1;
-                var swappedGem2 = gem2;
-
-                // 檢查特殊寶石組合
-                if (ProcessSpecialGems(swappedGem1, swappedGem2))
-                {
-                    FinalizeSwap(true);
-                    return;
-                }
-
                 // 檢查一般匹配
                 bool hasMatches = CheckForMatches();
                 if (hasMatches)
                 {
                     var matches = matchFinder.FindAllMatches();
-
-                    // 決定觸發點
                     SetTriggerPoint(matches, swappedGem1, swappedGem2);
-
                     StartCoroutine(ProcessMatchSequence());
                 }
                 else
@@ -359,6 +359,7 @@ namespace Match3Game
                 StartCoroutine(MakeGemsFall());
             }
         }
+
 
         // 新增一個輔助方法來設置觸發點
         private void SetTriggerPoint(List<MatchInfo> matches, Gem swappedGem1, Gem swappedGem2)
@@ -381,88 +382,111 @@ namespace Match3Game
         // 新增的輔助方法
         private bool IsValidSwapState()
         {
-            // 基本的空值檢查
-            if (gem1 == null || gem2 == null)
+            try
             {
-                Debug.LogWarning("交換失敗: One or both gems are null");
+                // 基本的空值檢查
+                if (gem1 == null || gem2 == null)
+                {
+                    Debug.LogWarning("交換失敗: 有寶石為空");
+                    return false;
+                }
+
+                // 檢查位置是否在遊戲板範圍內
+                if (!IsValidPosition(gem1.x, gem1.y) || !IsValidPosition(gem2.x, gem2.y))
+                {
+                    Debug.LogWarning($"交換失敗: 位置無效 - Gem1({gem1.x},{gem1.y}), Gem2({gem2.x},{gem2.y})");
+                    return false;
+                }
+
+                // 確保遊戲板陣列中存在這些寶石
+                if (gems[gem1.x, gem1.y] == null || gems[gem2.x, gem2.y] == null)
+                {
+                    Debug.LogWarning("交換失敗: 寶石不在遊戲板中");
+                    return false;
+                }
+
+                // 如果是特殊寶石，則放寬狀態檢查
+                if (gem1.id >= 100 || gem2.id >= 100)
+                {
+                    return true;
+                }
+
+                // 一般寶石才需要檢查遊戲狀態
+                if (CurrentState != GameState.Swapping && CurrentState != GameState.Ready)
+                {
+                    Debug.LogWarning($"交換失敗: 遊戲狀態不正確: {CurrentState}");
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"IsValidSwapState error: {e.Message}");
                 return false;
             }
-
-            // 檢查位置是否在遊戲板範圍內
-            if (!IsValidPosition(gem1.x, gem1.y) || !IsValidPosition(gem2.x, gem2.y))
-            {
-                Debug.LogWarning($"交換失敗: Invalid position - Gem1({gem1.x},{gem1.y}), Gem2({gem2.x},{gem2.y})");
-                return false;
-            }
-
-            // 確保遊戲板陣列中存在這些寶石
-            if (gems[gem1.x, gem1.y] == null || gems[gem2.x, gem2.y] == null)
-            {
-                Debug.LogWarning("交換失敗: Gems not found in board array");
-                return false;
-            }
-
-            // 檢查遊戲是否處於可以處理匹配的狀態
-            if (CurrentState == GameState.Ready || CurrentState == GameState.Resetting)
-            {
-                Debug.LogWarning($"交換失敗: Invalid game state: {CurrentState}");
-                return false;
-            }
-
-            return true;
         }
         private bool ProcessSpecialGems(Gem first, Gem second)
         {
-            // 檢查至少有一個是特殊寶石
-            if (first.id < 100 && second.id < 100)
+            try
             {
+                // 檢查至少有一個是特殊寶石
+                if (first.id < 100 && second.id < 100)
+                {
+                    return false;
+                }
+
+                // 處理特定組合規則
+                var combinationRules = new Dictionary<(int, int), int>
+        {
+            // 相同寶石組合
+            {(100, 100), 104}, // LineH + LineH = Cross
+            {(101, 101), 104}, // LineV + LineV = Cross
+            {(102, 102), 105}, // Bomb + Bomb = BigBomb
+            {(103, 103), 106}, // Rainbow + Rainbow = DestroyAll
+            
+            // 不同寶石組合
+            {(100, 101), 104}, // LineH + LineV = Cross
+            {(100, 102), 107}, // LineH + Bomb = RandomHLines
+            {(100, 103), 110}, // LineH + Rainbow = ThreeHLines
+            {(101, 102), 108}, // LineV + Bomb = RandomVLines
+            {(101, 103), 111}, // LineV + Rainbow = ThreeVLines
+            {(102, 103), 109}, // Bomb + Rainbow = MultiBomb
+        };
+
+                // 處理一般寶石與特殊寶石的組合
+                if ((first.id < 100 && second.id >= 100 && second.id <= 103) ||
+                    (second.id < 100 && first.id >= 100 && first.id <= 103))
+                {
+                    // 使用特殊寶石的ID作為結果
+                    var specialGemId = Math.Max(first.id, second.id);
+                    first.id = specialGemId;
+                    specialGemActivator.ActivateSpecialGem(first);
+                    Debug.Log($"處理一般寶石與特殊寶石組合：普通+{specialGemId} = {specialGemId}");
+                    return true;
+                }
+
+                // 處理特殊寶石之間的組合
+                var sortedIds = new[] { first.id, second.id }.OrderBy(x => x).ToArray();
+                var key = (sortedIds[0], sortedIds[1]);
+
+                if (combinationRules.TryGetValue(key, out int resultId))
+                {
+                    first.id = resultId;
+                    specialGemActivator.ActivateSpecialGem(first);
+                    Debug.Log($"處理特殊寶石組合：{sortedIds[0]}+{sortedIds[1]} = {resultId}");
+                    return true;
+                }
+
                 return false;
             }
-
-            // 處理特定組合規則
-            var combinationRules = new Dictionary<(int, int), int>
+            catch (Exception e)
             {
-                // 相同寶石組合
-                {(100, 100), 104}, // 結果ID從100開始
-                {(101, 101), 104},
-                {(102, 102), 105},
-                {(103, 103), 106},
-    
-                // 不同寶石組合
-                {(100, 101), 104},
-                {(100, 102), 107},
-                {(100, 103), 110},
-                {(101, 102), 108},
-                {(101, 103), 111},
-                {(102, 103), 109},
-            };
-
-            // 處理一般寶石與特殊寶石的組合
-            if ((first.id < 100 && second.id >= 100 && second.id <= 103) ||
-                (second.id < 100 && first.id >= 100 && first.id <= 103))
-            {
-                // 使用特殊寶石的ID作為結果
-                var specialGemId = Math.Max(first.id, second.id);
-                first.id = specialGemId;
-                specialGemActivator.ActivateSpecialGem(first);
-                Debug.Log($"處理一般寶石與特殊寶石組合：普通+{specialGemId} = {specialGemId}");
-                return true;
+                Debug.LogError($"ProcessSpecialGems error: {e.Message}");
+                return false;
             }
-
-            // 處理特殊寶石之間的組合
-            var sortedIds = new[] { first.id, second.id }.OrderBy(x => x).ToArray();
-            var key = (sortedIds[0], sortedIds[1]);
-
-            if (combinationRules.TryGetValue(key, out int resultId))
-            {
-                first.id = resultId;
-                specialGemActivator.ActivateSpecialGem(first);
-                Debug.Log($"處理特殊寶石組合：{sortedIds[0]}+{sortedIds[1]} = {resultId}");
-                return true;
-            }
-
-            return false;
         }
+
         private void FinalizeSwap(bool successful)
         {
             if (gem1 != null) gem1.isAnimating = false;
@@ -470,17 +494,16 @@ namespace Match3Game
             isSwitching = false;
             CurrentState = GameState.Ready;
             matchPredictor?.ResetPredictionTimer();
-        }       
+        }
 
         // 檢查遊戲板上是否存在寶石匹配
         // 這是遊戲核心邏輯的關鍵方法，用於偵測可消除的寶石組合
         public bool CheckForMatches()
         {
-            // 特殊寶石（ID >= 100）不進行匹配檢查
-            // 這是為了防止特殊寶石意外觸發消除邏輯
-            if (isSwitching && (gem1.id >= 100 || gem2.id >= 100))
-            { 
-                return false; 
+            // 特殊寶石交換時直接返回 true
+            if (isSwitching && (gem1?.id >= 100 || gem2?.id >= 100))
+            {
+                return true;
             }
 
             // 使用匹配查找器尋找所有可能的匹配
@@ -491,16 +514,14 @@ namespace Match3Game
             {
                 foreach (var gem in match.matchedGems)
                 {
-                    // 安全性檢查：確保寶石不為空
-                    // 標記可以被消除的寶石
                     if (gem != null)
                     {
-                        gem.isMatched = true;                       
+                        gem.isMatched = true;
                     }
                 }
             }
 
-            // 返回是否找到匹配（匹配組的數量大於0）
+            // 返回是否找到匹配
             return matches.Count > 0;
         }
 
@@ -877,7 +898,7 @@ namespace Match3Game
 
         // 寶石淡出效果的協程
         // 提供視覺上平滑的消除動畫
-        private IEnumerator FadeOutGems(HashSet<Gem> gems)
+        public IEnumerator FadeOutGems(HashSet<Gem> gems)
         {
             // 準備淡出效果的相關數據
             // 收集每個寶石的渲染器和初始顏色
@@ -1172,52 +1193,17 @@ namespace Match3Game
 
         // 淡出並銷毀指定的寶石列表的協程
         // 提供了一個安全、視覺上平滑的寶石消除機制
-        public IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy, bool isFromSwap = false, Action onComplete = null)
+        public IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy)
         {
-            // 安全性檢查：如果傳入的寶石列表為空，直接結束協程
-            if (gemsToDestroy == null || gemsToDestroy.Count == 0) {
-                onComplete?.Invoke();
-                yield break; 
-            }
-
-            // 創建一個安全的寶石列表，過濾掉無效或已損壞的寶石
-            // 這一步確保只處理可用的遊戲物件，防止運行時錯誤
-            var safeGems = new List<Gem>();
-            foreach (var gem in gemsToDestroy)
+            if (gemsToDestroy == null || gemsToDestroy.Count == 0)
             {
-                // 多重安全檢查：
-                // 1. 寶石不為空
-                // 2. 遊戲物件存在
-                // 3. 能成功獲取精靈渲染器
-                if (gem != null && gem.gameObject != null)
-                {
-                    try
-                    {
-                        // 額外檢查是否能獲取 SpriteRenderer
-                        var renderer = gem.GetComponent<SpriteRenderer>();
-                        if (renderer != null)
-                        {
-                            safeGems.Add(gem);
-                        }
-                        else
-                        {
-                            // 記錄渲染器遺失的警告，幫助追蹤潛在問題
-                            //Debug.LogWarning($"寶石 ({gem.x}, {gem.y}) 的 SpriteRenderer 已遺失");
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        // 捕獲並記錄任何意外的異常，提供除錯資訊
-                        Debug.LogError($"處理寶石時發生異常: {e.Message}");
-                    }
-                }
+                yield break;
             }
 
-            // 再次檢查：如果沒有有效的寶石，結束協程
+            var safeGems = gemsToDestroy.Where(gem => gem != null && gem.gameObject != null).ToList();
             if (safeGems.Count == 0) yield break;
 
-            // 從遊戲板陣列中移除即將被銷毀的寶石
-            // 這一步防止被移除的寶石在後續邏輯中被誤用
+            // 從遊戲板中移除寶石
             foreach (var gem in safeGems)
             {
                 if (gem != null && IsValidGemPosition(gem))
@@ -1226,60 +1212,40 @@ namespace Match3Game
                 }
             }
 
-            // 準備淡出效果的相關數據
-            // 收集每個寶石的渲染器和初始顏色，為動畫做準備
-            var fadeData = safeGems
-                .Select(gem => (
-                    Gem: gem,
-                    Renderer: gem.GetComponent<SpriteRenderer>(),
-                    StartColor: gem.GetComponent<SpriteRenderer>().color
-                ))
-                .ToList();
-
             // 執行淡出動畫
-            // 通過逐漸降低透明度來實現漸變消失效果
             float alpha = 1f;
             while (alpha > 0)
             {
-                // 根據遊戲速度計算透明度遞減速率
-                alpha -= Time.deltaTime * SWAP_DURATION;
-
-                // 安全地更新每個寶石的顏色透明度
-                foreach (var (gem, renderer, startColor) in fadeData)
+                alpha -= Time.deltaTime * 5f; // 加快淡出速度
+                foreach (var gem in safeGems)
                 {
-                    if (gem != null && gem.gameObject != null && renderer != null)
+                    if (gem != null && gem.gameObject != null)
                     {
-                        renderer.color = new Color(
-                            startColor.r,
-                            startColor.g,
-                            startColor.b,
-                            Mathf.Clamp01(alpha)  // 確保透明度在0-1之間
-                        );
+                        var renderer = gem.GetComponent<SpriteRenderer>();
+                        if (renderer != null)
+                        {
+                            renderer.color = new Color(renderer.color.r, renderer.color.g, renderer.color.b, alpha);
+                        }
                     }
                 }
-                yield return null;  // 等待下一幀
+                yield return null;
             }
 
-            // 銷毀已完成淡出的寶石遊戲物件
-            foreach (var (gem, _, _) in fadeData)
+            // 銷毀寶石
+            foreach (var gem in safeGems)
             {
                 if (gem != null && gem.gameObject != null)
                 {
                     if (gem.id >= 100)
                     {
-                        Debug.Log($"特殊寶石 {gem.id} 啟動中");
-                        //如果是特殊寶石，觸發特殊效果
                         specialGemActivator.ActivateSpecialGem(gem);
-                        
                     }
                     Destroy(gem.gameObject);
                 }
             }
 
-            // 觸發寶石下落，填補空白位置
+            // 立即開始填充
             yield return StartCoroutine(MakeGemsFall());
-            // 在所有操作完成後調用回調
-            onComplete?.Invoke();
         }
 
         // 輔助方法：驗證寶石位置是否有效
@@ -1473,12 +1439,12 @@ namespace Match3Game
             // - 任何一個檢查失敗都意味著寶石無效
         }
 
-        public CustomYieldInstruction WaitForFadeAndDestroy(List<Gem> gemsToDestroy)
-        {
-            bool isCompleted = false;
-            StartCoroutine(FadeAndDestroyGems(gemsToDestroy, false, () => isCompleted = true));
-            return new WaitUntil(() => isCompleted);
-        }
+        //public CustomYieldInstruction WaitForFadeAndDestroy(List<Gem> gemsToDestroy)
+        //{
+        //    bool isCompleted = false;
+        //    StartCoroutine(FadeAndDestroyGems(gemsToDestroy, false, () => isCompleted = true));
+        //    return new WaitUntil(() => isCompleted);
+        //}
 
         #endregion
     }
