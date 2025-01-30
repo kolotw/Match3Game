@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -28,7 +28,7 @@ namespace Match3Game
                 }
             }
 
-            yield return board.StartCoroutine(board.FadeAndDestroyGems(allGems));
+            yield return board.StartCoroutine(board.消失與刪除寶石(allGems));
 
             yield return board.StartCoroutine(board.FillEmptySpaces(-1));
             board.matchPredictor.ResetPredictionTimer();

@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,21 +17,21 @@ namespace Match3Game
         {
             List<Board.MatchInfo> allMatches = new List<Board.MatchInfo>();
 
-            // ¥Î©ó°lÂÜ¤w¸g³QÀË¬d¹LªºÄ_¥Û¡AÁ×§K­«½Æ³B²z
+            // ç”¨æ–¼è¿½è¹¤å·²ç¶“è¢«æª¢æŸ¥éçš„å¯¶çŸ³ï¼Œé¿å…é‡è¤‡è™•ç†
             bool[,] processed = new bool[board.width, board.height];
 
-            // ¤ô¥­¤è¦V°t¹ïÀË´ú
+            // æ°´å¹³æ–¹å‘é…å°æª¢æ¸¬
             for (int y = 0; y < board.height; y++)
             {
                 for (int x = 0; x < board.width - 2; x++)
                 {
-                    // ¸õ¹L¤w³B²z©ÎªÅªºÄ_¥Û
+                    // è·³éå·²è™•ç†æˆ–ç©ºçš„å¯¶çŸ³
                     if (processed[x, y] || board.gems[x, y] == null) continue;
 
                     Board.MatchInfo match = CheckMatch(x, y, true);
                     if (match != null)
                     {
-                        // ¼Ğ°O¤w³B²zªºÄ_¥Û
+                        // æ¨™è¨˜å·²è™•ç†çš„å¯¶çŸ³
                         foreach (var gem in match.matchedGems)
                         {
                             processed[gem.x, gem.y] = true;
@@ -41,21 +41,21 @@ namespace Match3Game
                 }
             }
 
-            // ­«¸m¤w³B²z¼Ğ°O¡A¬°««ª½ÀË´ú°µ·Ç³Æ
+            // é‡ç½®å·²è™•ç†æ¨™è¨˜ï¼Œç‚ºå‚ç›´æª¢æ¸¬åšæº–å‚™
             processed = new bool[board.width, board.height];
 
-            // ««ª½¤è¦V°t¹ïÀË´ú
+            // å‚ç›´æ–¹å‘é…å°æª¢æ¸¬
             for (int x = 0; x < board.width; x++)
             {
                 for (int y = 0; y < board.height - 2; y++)
                 {
-                    // ¸õ¹L¤w³B²z©ÎªÅªºÄ_¥Û
+                    // è·³éå·²è™•ç†æˆ–ç©ºçš„å¯¶çŸ³
                     if (processed[x, y] || board.gems[x, y] == null) continue;
 
                     Board.MatchInfo match = CheckMatch(x, y, false);
                     if (match != null)
                     {
-                        // ¼Ğ°O¤w³B²zªºÄ_¥Û
+                        // æ¨™è¨˜å·²è™•ç†çš„å¯¶çŸ³
                         foreach (var gem in match.matchedGems)
                         {
                             processed[gem.x, gem.y] = true;
@@ -65,7 +65,7 @@ namespace Match3Game
                 }
             }
 
-            // ¯S®íªº¤Q¦r°t¹ïÀË´ú
+            // ç‰¹æ®Šçš„åå­—é…å°æª¢æ¸¬
             for (int x = 0; x < board.width; x++)
             {
                 for (int y = 0; y < board.height; y++)
@@ -85,12 +85,12 @@ namespace Match3Game
             Gem centerGem = board.GetGem(centerX, centerY);
             if (centerGem == null) return null;
 
-            // ¤ô¥­¤è¦V³sÄò¤Ç°tÀË¬d
+            // æ°´å¹³æ–¹å‘é€£çºŒåŒ¹é…æª¢æŸ¥
             List<Gem> horizontalMatchGems = new List<Gem>();
             int leftX = centerX - 1;
             int rightX = centerX + 1;
 
-            // ¦V¥ªÀË¬d³sÄò¤Ç°t
+            // å‘å·¦æª¢æŸ¥é€£çºŒåŒ¹é…
             while (leftX >= 0)
             {
                 Gem leftGem = board.GetGem(leftX, centerY);
@@ -105,7 +105,7 @@ namespace Match3Game
                 }
             }
 
-            // ¦V¥kÀË¬d³sÄò¤Ç°t
+            // å‘å³æª¢æŸ¥é€£çºŒåŒ¹é…
             while (rightX < board.width)
             {
                 Gem rightGem = board.GetGem(rightX, centerY);
@@ -120,12 +120,12 @@ namespace Match3Game
                 }
             }
 
-            // ««ª½¤è¦V³sÄò¤Ç°tÀË¬d
+            // å‚ç›´æ–¹å‘é€£çºŒåŒ¹é…æª¢æŸ¥
             List<Gem> verticalMatchGems = new List<Gem>();
             int upY = centerY - 1;
             int downY = centerY + 1;
 
-            // ¦V¤WÀË¬d³sÄò¤Ç°t
+            // å‘ä¸Šæª¢æŸ¥é€£çºŒåŒ¹é…
             while (upY >= 0)
             {
                 Gem upGem = board.GetGem(centerX, upY);
@@ -140,7 +140,7 @@ namespace Match3Game
                 }
             }
 
-            // ¦V¤UÀË¬d³sÄò¤Ç°t
+            // å‘ä¸‹æª¢æŸ¥é€£çºŒåŒ¹é…
             while (downY < board.height)
             {
                 Gem downGem = board.GetGem(centerX, downY);
@@ -155,11 +155,11 @@ namespace Match3Game
                 }
             }
 
-            // ÄY®æªº¤Q¦r°t¹ï§PÂ_
+            // åš´æ ¼çš„åå­—é…å°åˆ¤æ–·
             bool isCrossMatch =
-                // ¦Ü¤Ö3­Ó³sÄòªº¤ô¥­¤Ç°t
+                // è‡³å°‘3å€‹é€£çºŒçš„æ°´å¹³åŒ¹é…
                 horizontalMatchGems.Count >= 2 &&
-                // ¦Ü¤Ö3­Ó³sÄòªº««ª½¤Ç°t
+                // è‡³å°‘3å€‹é€£çºŒçš„å‚ç›´åŒ¹é…
                 verticalMatchGems.Count >= 2;
 
             if (isCrossMatch)

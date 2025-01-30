@@ -1,4 +1,4 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 
 namespace Match3Game
 {
@@ -21,7 +21,7 @@ namespace Match3Game
                 gemId = Random.Range(0, gemPrefabs.Length);
             }
             if (board.onError) { 
-                Debug.Log("Error: ≠n∂Ò§W∏Í∑Ω");  
+                Debug.Log("Error: Ë¶ÅÂ°´‰∏äË≥áÊ∫ê");  
                 board.onError=false;
                 gemId = 2;
             }

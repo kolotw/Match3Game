@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,15 +13,15 @@ namespace Match3Game
             this.board = board;
         }
 
-        public void ActivateSpecialGem(Gem gem)
+        public void å•Ÿå‹•ç‰¹æ®Šå¯¶çŸ³(Gem gem)
         {
             if (!ValidateGemPosition(gem, gem.x, gem.y))
             {
-                Debug.LogWarning($"¯S®íÄ_¥Û¦ì¸mµL®Ä: ({gem.x}, {gem.y})");
+                Debug.LogWarning($"ç‰¹æ®Šå¯¶çŸ³ä½ç½®ç„¡æ•ˆ: ({gem.x}, {gem.y})");
                 return;
             }
             
-            board.StartCoroutine(ActivateSpecialGemSequentially(gem));
+            board.StartCoroutine(è§¸ç™¼ç‰¹æ®Šå¯¶çŸ³(gem));
         }
         private bool ValidateGemPosition(Gem gem, int x, int y)
         {
@@ -30,14 +30,14 @@ namespace Match3Game
            gem != null &&
            gem.gameObject != null;
         }
-        private IEnumerator ActivateSpecialGemSequentially(Gem gem)
+        private IEnumerator è§¸ç™¼ç‰¹æ®Šå¯¶çŸ³(Gem gem)
         {
             if (gem == null || gem.gameObject == null)
             {
-                Debug.LogWarning("¹Á¸Õ±Ò°ÊµL®Äªº¯S®íÄ_¥Û");
+                Debug.LogWarning("å˜—è©¦å•Ÿå‹•ç„¡æ•ˆçš„ç‰¹æ®Šå¯¶çŸ³");
                 yield break;
             }
-            // µ¥«İ¥æ´«°Êµe§¹¦¨
+            // ç­‰å¾…äº¤æ›å‹•ç•«å®Œæˆ
             while (gem.isAnimating)
             {
                 yield return null;
@@ -46,13 +46,13 @@ namespace Match3Game
             board.matchPredictor?.StopTimer();
             int resType = gem.id - 100;
             List<Gem> allDestroyedGems = new List<Gem>();
-            board.statusText.text = "®ø°£¤¤";
+            board.statusText.text = "æ¶ˆé™¤ä¸­";
 
-            // ±N¤è¦V¼Æ²Õ²¾¨ì³o¸Ì¡AÅı©Ò¦³ case ³£¯à¨Ï¥Î
+            // å°‡æ–¹å‘æ•¸çµ„ç§»åˆ°é€™è£¡ï¼Œè®“æ‰€æœ‰ case éƒ½èƒ½ä½¿ç”¨
             int[] dx = { -1, -1, -1, 0, 0, 1, 1, 1 };
             int[] dy = { -1, 0, 1, -1, 1, -1, 0, 1 };
 
-            // ²¾°£©Ò¦³­Ó§Oªºµ¥«İ®É¶¡¡Aª½±µ¦¬¶°­n®ø°£ªºÄ_¥Û
+            // ç§»é™¤æ‰€æœ‰å€‹åˆ¥çš„ç­‰å¾…æ™‚é–“ï¼Œç›´æ¥æ”¶é›†è¦æ¶ˆé™¤çš„å¯¶çŸ³
             switch (resType)
             {
                 case 0: // LineH
@@ -60,12 +60,12 @@ namespace Match3Game
                     break;
 
                 case 1: // LineV
-                    //¦pªG¨â­ÓÄ_¥Û³£¬Oª½½uÄ_¥Û¡A«h®ø°£¤Q¦r§Î
+                    //å¦‚æœå…©å€‹å¯¶çŸ³éƒ½æ˜¯ç›´ç·šå¯¶çŸ³ï¼Œå‰‡æ¶ˆé™¤åå­—å½¢
                     lineV(allDestroyedGems, gem);
                     break;
 
                 case 2: // Bomb
-                        // ¥ı¥[¤J¤¤¤ßÂI
+                        // å…ˆåŠ å…¥ä¸­å¿ƒé»
                     if (ValidateGemPosition(gem, gem.x, gem.y))
                     {
                         allDestroyedGems.Add(gem);
@@ -101,7 +101,7 @@ namespace Match3Game
                         int randomTargetID = Random.Range(0, board.gemPrefabs.Length);
                         targetId = randomTargetID; 
                     }
-                    Debug.Log($"Rainbow Ä_¥Ûªº¥Ø¼Ğ ID¡G{targetId}");
+                    Debug.Log($"Rainbow å¯¶çŸ³çš„ç›®æ¨™ IDï¼š{targetId}");
 
                     for (int x = 0; x < board.width; x++)
                     {
@@ -178,7 +178,7 @@ namespace Match3Game
                     }
                     break;
 
-                case 7: // ¾î¦VÀH¾÷®ø°£
+                case 7: // æ©«å‘éš¨æ©Ÿæ¶ˆé™¤
                     int linesToDestroy = Random.Range(2, board.height - 2);
                     List<int> allLines = new List<int>();
                     for (int y = 0; y < board.height; y++)
@@ -209,7 +209,7 @@ namespace Match3Game
                     }
                     break;
 
-                case 8: // Áa¦VÀH¾÷®ø°£
+                case 8: // ç¸±å‘éš¨æ©Ÿæ¶ˆé™¤
                     int columnsToDestroy = Random.Range(2, board.width - 2);
                     List<int> allColumns = new List<int>();
                     for (int x = 0; x < board.width; x++)
@@ -239,7 +239,7 @@ namespace Match3Game
                     }
                     break;
 
-                case 9: // ¦h­«¬µ¼u
+                case 9: // å¤šé‡ç‚¸å½ˆ
                     List<(int x, int y)> bombPositions = new List<(int x, int y)>();
                     int attempts = 0;
                     while (bombPositions.Count < 2 && attempts < 3)
@@ -288,7 +288,7 @@ namespace Match3Game
                     }
                     break;
 
-                case 10: // ¾î¦V¤T¦æ®ø°£
+                case 10: // æ©«å‘ä¸‰è¡Œæ¶ˆé™¤
                     int startY = Mathf.Max(gem.y - 1, 0);
                     int endY = Mathf.Min(gem.y + 1, board.height - 1);
                     for (int y = startY; y <= endY; y++)
@@ -304,7 +304,7 @@ namespace Match3Game
                     }
                     break;
 
-                case 11: // Áa¦V¤T¦æ®ø°£
+                case 11: // ç¸±å‘ä¸‰è¡Œæ¶ˆé™¤
                     int startX = Mathf.Max(gem.x - 1, 0);
                     int endX = Mathf.Min(gem.x + 1, board.width - 1);
                     for (int x = startX; x <= endX; x++)
@@ -321,12 +321,12 @@ namespace Match3Game
                     break;
             }
 
-            //Debug.Log("§@¥Î¤¤: " + gem.id);
-            board.statusText.text = "®ø°£¤¤";
+            //Debug.Log("ä½œç”¨ä¸­: " + gem.id);
+            board.statusText.text = "æ¶ˆé™¤ä¸­";
 
             if (allDestroyedGems.Count > 0)
             {
-                yield return board.StartCoroutine(board.FadeAndDestroyGems(allDestroyedGems));
+                yield return board.StartCoroutine(board.æ¶ˆå¤±èˆ‡åˆªé™¤å¯¶çŸ³(allDestroyedGems));
             }
         }
         List<Gem> lineV(List<Gem> allDestroyedGems, Gem gem)

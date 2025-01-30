@@ -113,7 +113,7 @@ namespace Match3Game
             yield return new WaitForSeconds(0.3f / Board.instance.gemMoveSpeed);
 
             // 移動完後觸發效果
-            Board.instance.specialGemActivator.ActivateSpecialGem(this);
+            Board.instance.specialGemActivator.啟動特殊寶石(this);
         }
         public IEnumerator AnimateMove(Vector3 target, float duration)
         {

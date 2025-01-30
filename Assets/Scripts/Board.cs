@@ -22,7 +22,7 @@ namespace Match3Game
     // 負責管理遊戲板的所有邏輯，包括寶石交換、匹配、消除等
     public class Board : MonoBehaviour
     {
-        #region Variables
+        #region 變數
         // 單例模式：確保遊戲中只有一個遊戲板實例
         public static Board instance;
         private readonly object swapLock = new object();
@@ -75,7 +75,7 @@ namespace Match3Game
         private const float FPS_UPDATE_INTERVAL = 0.5f;  // 性能指標更新間隔
         public const float FALL_DELAY = 0.1f;       // 寶石下落的延遲時間
         #endregion
-        #region Properties
+        #region 屬性
         // 遊戲狀態屬性
         // 提供對當前遊戲狀態的安全訪問和管理
         public GameState CurrentState
@@ -98,7 +98,7 @@ namespace Match3Game
         }
         #endregion
 
-        #region Unity Lifecycle
+        #region 生命週期方法
         // Awake 方法：在遊戲物件被實例化時立即調用
         // 用於進行初始化設置，在 Start 方法之前執行
         private void Awake()
@@ -143,7 +143,7 @@ namespace Match3Game
             CleanupResources();
         }
         #endregion
-        #region Initialization
+        #region 初始化方法
         // 初始化遊戲的各個組件
         // 創建支持遊戲運行的各種輔助類別
         private void InitializeComponents()
@@ -208,7 +208,7 @@ namespace Match3Game
         }
         #endregion
 
-        #region Game Logic
+        #region 遊戲邏輯方法
         // 根據座標從遊戲板獲取特定位置的寶石
         // 提供一個安全的方法來訪問遊戲板上的寶石
         public Gem GetGem(int x, int y)
@@ -231,7 +231,7 @@ namespace Match3Game
 
             // 啟動寶石交換的協程
             // 協程允許執行平滑的動畫和複雜的遊戲邏輯
-            StartCoroutine(SwapGemsRoutine(x1, y1, x2, y2));
+            StartCoroutine(啟動交換寶石(x1, y1, x2, y2));
         }
         private void SwapGems(int x1, int y1, int x2, int y2)
         {
@@ -255,10 +255,10 @@ namespace Match3Game
             }
         }
         #endregion
-        #region Coroutines
+        #region 協程方法
         // 寶石交換的協程方法
         // 處理寶石交換的複雜邏輯，包括動畫、安全檢查和匹配處理
-        private IEnumerator SwapGemsRoutine(int x1, int y1, int x2, int y2)
+        private IEnumerator 啟動交換寶石(int x1, int y1, int x2, int y2)
         {
             if (!ValidateMove(x1, y1, x2, y2))
             {
@@ -295,7 +295,7 @@ namespace Match3Game
 
             yield return new WaitForSeconds(swapDuration);
 
-            ProcessMatchesAfterSwap();
+            交換寶石後再檢查();
 
             gem1.isAnimating = false;
             gem2.isAnimating = false;
@@ -308,7 +308,7 @@ namespace Match3Game
         // 檢查交換是否產生匹配，處理特殊寶石等情況
         // Board.cs 的 #region Coroutines 區塊中
 
-        private void ProcessMatchesAfterSwap()
+        private void 交換寶石後再檢查()
         {
             try
             {
@@ -319,9 +319,9 @@ namespace Match3Game
                 // 優先檢查特殊寶石的組合
                 if (swappedGem1.id >= 100 || swappedGem2.id >= 100)
                 {
-                    if (ProcessSpecialGems(swappedGem1, swappedGem2))
+                    if (處理特殊寶石的組合(swappedGem1, swappedGem2))
                     {
-                        FinalizeSwap(true);
+                        寶石交換已完成(true);
                         return;
                     }
                 }
@@ -347,10 +347,10 @@ namespace Match3Game
                 else
                 {
                     // 無匹配則換回原位
-                    SwapBack();
+                    還原寶石位置();
                 }
 
-                FinalizeSwap(hasMatches);
+                寶石交換已完成(hasMatches);
             }
             catch (Exception e)
             {
@@ -426,7 +426,7 @@ namespace Match3Game
                 return false;
             }
         }
-        private bool ProcessSpecialGems(Gem first, Gem second)
+        private bool 處理特殊寶石的組合(Gem first, Gem second)
         {
             try
             {
@@ -466,7 +466,7 @@ namespace Match3Game
                         // 如果 second 的 ID 更大，直接將 first 替換為 second
                         first = second;
                     }
-                    specialGemActivator.ActivateSpecialGem(first);
+                    specialGemActivator.啟動特殊寶石(first);
 
                     Debug.Log($"處理一般寶石與特殊寶石組合：普通+{first.id} = {first.x},{first.y} byPlayer: {byPlayer}");
                     return true;
@@ -479,7 +479,7 @@ namespace Match3Game
                 if (combinationRules.TryGetValue(key, out int resultId))
                 {
                     first.id = resultId;
-                    specialGemActivator.ActivateSpecialGem(first);
+                    specialGemActivator.啟動特殊寶石(first);
                     Debug.Log($"處理特殊寶石組合：{sortedIds[0]}+{sortedIds[1]} = {resultId}");
                     return true;
                 }
@@ -493,7 +493,7 @@ namespace Match3Game
             }
         }
 
-        private void FinalizeSwap(bool successful)
+        private void 寶石交換已完成(bool successful)
         {
             if (gem1 != null) gem1.isAnimating = false;
             if (gem2 != null) gem2.isAnimating = false;
@@ -583,7 +583,7 @@ namespace Match3Game
         }
         #endregion
         // 當交換的寶石沒有匹配時，將寶石換回原位
-        private void SwapBack()
+        private void 還原寶石位置()
         {
             //Debug.Log("沒有匹配，將寶石換回原位");
 
@@ -1199,7 +1199,7 @@ namespace Match3Game
 
         // 淡出並銷毀指定的寶石列表的協程
         // 提供了一個安全、視覺上平滑的寶石消除機制
-        public IEnumerator FadeAndDestroyGems(List<Gem> gemsToDestroy)
+        public IEnumerator 消失與刪除寶石(List<Gem> gemsToDestroy)
         {
             if (gemsToDestroy == null || gemsToDestroy.Count == 0)
             {
@@ -1244,7 +1244,7 @@ namespace Match3Game
                 {
                     if (gem.id >= 100)
                     {
-                        specialGemActivator.ActivateSpecialGem(gem);
+                        specialGemActivator.啟動特殊寶石(gem);
                     }
                     Destroy(gem.gameObject);
                 }
