@@ -30,7 +30,7 @@ namespace Match3Game
 
             yield return board.StartCoroutine(board.消失與刪除寶石(allGems));
 
-            yield return board.StartCoroutine(board.FillEmptySpaces(-1));
+            yield return board.StartCoroutine(board.填滿空位(-1));
             board.matchPredictor.ResetPredictionTimer();
         }
     }

@@ -12,7 +12,87 @@ namespace Match3Game
         {
             this.board = board;
         }
+        private Board.MatchInfo CheckTLShapeMatch(int centerX, int centerY)
+        {
+            Gem centerGem = board.GetGem(centerX, centerY);
+            if (centerGem == null) return null;
 
+            // 檢查四個方向的連續匹配
+            List<Gem> leftGems = new List<Gem>();
+            List<Gem> rightGems = new List<Gem>();
+            List<Gem> upGems = new List<Gem>();
+            List<Gem> downGems = new List<Gem>();
+
+            // 向左檢查
+            for (int x = centerX - 1; x >= 0; x--)
+            {
+                Gem gem = board.GetGem(x, centerY);
+                if (gem?.id == centerGem.id)
+                    leftGems.Add(gem);
+                else
+                    break;
+            }
+
+            // 向右檢查
+            for (int x = centerX + 1; x < board.width; x++)
+            {
+                Gem gem = board.GetGem(x, centerY);
+                if (gem?.id == centerGem.id)
+                    rightGems.Add(gem);
+                else
+                    break;
+            }
+
+            // 向上檢查
+            for (int y = centerY - 1; y >= 0; y--)
+            {
+                Gem gem = board.GetGem(centerX, y);
+                if (gem?.id == centerGem.id)
+                    upGems.Add(gem);
+                else
+                    break;
+            }
+
+            // 向下檢查
+            for (int y = centerY + 1; y < board.height; y++)
+            {
+                Gem gem = board.GetGem(centerX, y);
+                if (gem?.id == centerGem.id)
+                    downGems.Add(gem);
+                else
+                    break;
+            }
+
+            // 檢查是否形成T型或L型
+            bool hasHorizontalMatch = leftGems.Count + rightGems.Count >= 2;
+            bool hasVerticalMatch = upGems.Count + downGems.Count >= 2;
+
+            // T型檢查 (三個方向都有至少一個匹配)
+            bool isTShape = (leftGems.Count >= 1 && rightGems.Count >= 1 && (upGems.Count >= 2 || downGems.Count >= 2)) ||
+                           (upGems.Count >= 1 && downGems.Count >= 1 && (leftGems.Count >= 2 || rightGems.Count >= 2));
+
+            // L型檢查 (兩個垂直方向有至少兩個匹配)
+            bool isLShape = (hasHorizontalMatch && hasVerticalMatch) &&
+                           ((leftGems.Count >= 2 && (upGems.Count >= 2 || downGems.Count >= 2)) ||
+                            (rightGems.Count >= 2 && (upGems.Count >= 2 || downGems.Count >= 2)));
+
+            if (isTShape || isLShape)
+            {
+                var specialMatch = new Board.MatchInfo
+                {
+                    matchedGems = new List<Gem> { centerGem }
+                };
+                specialMatch.matchedGems.AddRange(leftGems);
+                specialMatch.matchedGems.AddRange(rightGems);
+                specialMatch.matchedGems.AddRange(upGems);
+                specialMatch.matchedGems.AddRange(downGems);
+                specialMatch.isHorizontal = true;
+                specialMatch.isVertical = true;
+                return specialMatch;
+            }
+
+            return null;
+        }
         public List<Board.MatchInfo> FindAllMatches()
         {
             List<Board.MatchInfo> allMatches = new List<Board.MatchInfo>();
@@ -77,7 +157,18 @@ namespace Match3Game
                     }
                 }
             }
-
+            // 檢查 T型和L型配對
+            for (int x = 0; x < board.width; x++)
+            {
+                for (int y = 0; y < board.height; y++)
+                {
+                    var tlMatch = CheckTLShapeMatch(x, y);
+                    if (tlMatch != null)
+                    {
+                        allMatches.Add(tlMatch);
+                    }
+                }
+            }
             return allMatches;
         }
         private Board.MatchInfo CheckSpecialCrossMatch(int centerX, int centerY)
