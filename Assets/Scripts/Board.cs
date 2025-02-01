@@ -509,8 +509,8 @@ namespace Match3Game
 
         private void 寶石交換已完成(bool successful)
         {
-            if (gem1 != null) gem1.isAnimating = false;
-            if (gem2 != null) gem2.isAnimating = false;
+            if (gem1 != null) { gem1.isAnimating = false; Destroy(gem1.gameObject); }
+            if (gem2 != null) { gem2.isAnimating = false; Destroy(gem2.gameObject); }
             isSwitching = false;
             CurrentState = GameState.Ready;
             matchPredictor?.ResetPredictionTimer();
@@ -804,6 +804,7 @@ namespace Match3Game
                     var existingGem = gems[triggerX, triggerY];
                     if (existingGem.gameObject != null)
                     {
+                        Debug.Log($"除現有的寶石 at ({triggerX}, {triggerY})");
                         Destroy(existingGem.gameObject);
                     }
                     gems[triggerX, triggerY] = null;

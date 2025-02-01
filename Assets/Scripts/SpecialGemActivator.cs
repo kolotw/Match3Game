@@ -23,6 +23,7 @@ namespace Match3Game
             }
             board.StartCoroutine(觸發特殊寶石(gem));
         }
+        
         private bool ValidateGemPosition(Gem gem, int x, int y)
         {
             return x >= 0 && x < board.width &&
@@ -261,6 +262,6 @@ namespace Match3Game
                     break;
             }
         }
-
+        
     }
 }
