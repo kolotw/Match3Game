@@ -768,7 +768,7 @@ namespace Match3Game
 
             foreach (var group in matchGroups.Where(g => g.Value.Count >= 4))
             {
-                var (resourceType, isHorizontal, isVertical, _) = DetectMatchAndDetermineResourceType(group.Value);
+                var (resourceType, isHorizontal, isVertical, _) = 確認要生成的特殊寶石(group.Value);
 
                 if (!byPlayer)
                 {
@@ -804,7 +804,7 @@ namespace Match3Game
                     var existingGem = gems[triggerX, triggerY];
                     if (existingGem.gameObject != null)
                     {
-                        Debug.Log($"除現有的寶石 at ({triggerX}, {triggerY})");
+                        Debug.Log($"移除現有的寶石 at ({triggerX}, {triggerY}) 為生成：{resourceType}");
                         Destroy(existingGem.gameObject);
                     }
                     gems[triggerX, triggerY] = null;
@@ -912,7 +912,7 @@ namespace Match3Game
             }
         }
 
-        private (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems) DetectMatchAndDetermineResourceType(List<Gem> gems)
+        private (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems) 確認要生成的特殊寶石(List<Gem> gems)
         {            
             gems = gems.Distinct().ToList();  // 去除重複的寶石
 

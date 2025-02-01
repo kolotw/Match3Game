@@ -208,7 +208,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   width: 5
-  height: 7
+  height: 8
   gemMoveSpeed: 5
   matchPredictor: {fileID: 0}
   statusText: {fileID: 1768676954}
