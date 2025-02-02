@@ -329,11 +329,10 @@ namespace Match3Game
                 bool hasValidMatch = false;
 
                 // 先處理一般寶石配對
-                // 先處理一般寶石配對
                 var matches = matchFinder.FindAllMatches();
                 if (matches.Count > 0)
                 {
-                    Debug.Log("matches" + matches.Count);
+                    //Debug.Log("matches" + matches.Count);
 
                     // 先標記所有匹配的寶石
                     foreach (var match in matches)
@@ -359,8 +358,8 @@ namespace Match3Game
                         {
                             playerTriggerX[i] = triggerX;
                             playerTriggerY[i] = triggerY;
-
-                            Debug.Log($"玩家模式觸發點 {i}：({playerTriggerX[i]}, {playerTriggerY[i]})");
+                            設置觸發點(matches, swappedGem1, swappedGem2);
+                            //Debug.Log($"玩家模式觸發點 {i}：({playerTriggerX[i]}, {playerTriggerY[i]})");
                         }
                     }
                     else
@@ -410,36 +409,58 @@ namespace Match3Game
         // 新增一個輔助方法來設置觸發點 triggerX, triggerY
         private void 設置觸發點(List<MatchInfo> matches, Gem swappedGem1, Gem swappedGem2)
         {
-            if (byPlayer && matches.Count > 1)
+            if (byPlayer)
             {
-                // 重新初始化觸發點陣列
                 playerTriggerX = new int[matches.Count];
                 playerTriggerY = new int[matches.Count];
 
-                // 為每個 match 設置觸發點
                 for (int i = 0; i < matches.Count; i++)
                 {
-                    playerTriggerX[i] = matches[i].matchedGems[0].x;
-                    playerTriggerY[i] = matches[i].matchedGems[0].y;
+                    var match = matches[i];
+                    var triggerGem = match.matchedGems.FirstOrDefault(g =>
+                        (g.x == swappedGem1.x && g.y == swappedGem1.y) ||
+                        (g.x == swappedGem2.x && g.y == swappedGem2.y));
 
-                    Debug.Log($"玩家模式觸發點 {i}：({playerTriggerX[i]}, {playerTriggerY[i]})");
+                    playerTriggerX[i] = triggerGem?.x ?? match.matchedGems[0].x;
+                    playerTriggerY[i] = triggerGem?.y ?? match.matchedGems[0].y;
                 }
             }
             else
             {
-                // 原本的非玩家模式邏輯
-                bool gem1Matched = matches.Any(m => m.matchedGems.Contains(swappedGem1));
-                bool gem2Matched = matches.Any(m => m.matchedGems.Contains(swappedGem2));
+                var matchesByType = matches.GroupBy(m => m.matchedGems[0].id);
+                foreach (var group in matchesByType)
+                {
+                    var consecutiveGems = new List<Gem>();
+                    foreach (var match in group)
+                    {
+                        // 檢查水平連續性
+                        var horizontalGems = match.matchedGems
+                            .GroupBy(g => g.y)
+                            .Where(g => g.Count() >= 3)
+                            .SelectMany(g => g.OrderBy(gem => gem.x))
+                            .Where((gem, i) => i == 0 ||
+                                match.matchedGems.Any(prev =>
+                                    prev.x == gem.x - 1 && prev.y == gem.y));
 
-                if (gem1Matched)
-                {
-                    triggerX = swappedGem1.x;
-                    triggerY = swappedGem1.y;
-                }
-                else if (gem2Matched)
-                {
-                    triggerX = swappedGem2.x;
-                    triggerY = swappedGem2.y;
+                        // 檢查垂直連續性  
+                        var verticalGems = match.matchedGems
+                            .GroupBy(g => g.x)
+                            .Where(g => g.Count() >= 3)
+                            .SelectMany(g => g.OrderBy(gem => gem.y))
+                            .Where((gem, i) => i == 0 ||
+                                match.matchedGems.Any(prev =>
+                                    prev.y == gem.y - 1 && prev.x == gem.x));
+
+                        consecutiveGems.AddRange(horizontalGems);
+                        consecutiveGems.AddRange(verticalGems);
+                    }
+
+                    if (consecutiveGems.Any())
+                    {
+                        int randomIndex = UnityEngine.Random.Range(0, consecutiveGems.Count);
+                        triggerX = consecutiveGems[randomIndex].x;
+                        triggerY = consecutiveGems[randomIndex].y;
+                    }
                 }
             }
         }
@@ -784,18 +805,18 @@ namespace Match3Game
             // 3. 在寶石下落前生成特殊寶石
             if (byPlayer)
             {
-                // 使用玩家模式的觸發點
-                for (int i = 0; i < matchGroups.Count; i++)
+                // 使用玩家模式的觸發點，每個觸發點都生成特殊寶石
+                for (int i = 0; i < matchGroups.Count && i < playerTriggerX.Length; i++)
                 {
                     var group = matchGroups[i];
                     var (resourceType, isHorizontal, isVertical, _) = 確認要生成的特殊寶石(group.ToList());
 
                     if (resourceType != -1)
                     {
+                        // 使用對應索引的觸發點
                         triggerX = playerTriggerX[i];
                         triggerY = playerTriggerY[i];
-
-                        Debug.Log($"生成特殊寶石的位置：({triggerX},{triggerY}) 特殊: {resourceType}");
+                        //Debug.Log($"生成第{i + 1}個特殊寶石：({triggerX},{triggerY}) 類型: {resourceType}");
 
                         if (IsValidPosition(triggerX, triggerY))
                         {
@@ -806,18 +827,16 @@ namespace Match3Game
             }
             else
             {
-                // 保持原本的非玩家模式
+                // 非玩家模式，為每組匹配生成特殊寶石
                 foreach (var group in matchGroups)
                 {
                     var (resourceType, isHorizontal, isVertical, _) = 確認要生成的特殊寶石(group.ToList());
-
                     if (resourceType != -1)
                     {
-                        Gem randomGem = group.ToList()[UnityEngine.Random.Range(0, group.Count())];
+                        var availableGems = group.ToList();
+                        var randomGem = availableGems[UnityEngine.Random.Range(0, availableGems.Count)];
                         triggerX = randomGem.x;
                         triggerY = randomGem.y;
-
-                        Debug.Log($"生成特殊寶石的位置：({triggerX},{triggerY}) 特殊: {resourceType}");
 
                         if (IsValidPosition(triggerX, triggerY))
                         {
@@ -826,6 +845,7 @@ namespace Match3Game
                     }
                 }
             }
+
             // 4. 執行一次寶石下落
             yield return StartCoroutine(落下寶石());
 
