@@ -21,7 +21,7 @@ namespace Match3Game
                 Debug.LogWarning($"特殊寶石位置無效: ({gem.x}, {gem.y})");
                 return;
             }
-            board.StartCoroutine(觸發特殊寶石(gem));
+            board.StartCoroutine(觸發特殊寶石效果(gem));
         }
         
         private bool ValidateGemPosition(Gem gem, int x, int y)
@@ -31,7 +31,7 @@ namespace Match3Game
            gem != null &&
            gem.gameObject != null;
         }
-        private IEnumerator 觸發特殊寶石(Gem gem)
+        private IEnumerator 觸發特殊寶石效果(Gem gem)
         {
             if (gem == null || gem.gameObject == null)
             {
@@ -63,24 +63,49 @@ namespace Match3Game
             // 先移除要觸發的特殊寶石，避免它們被消除
             foreach (var specialGem in specialGems)
             {
+                //Debug.Log($"移除特殊寶石: {specialGem.id} ({specialGem.x}, {specialGem.y})");
                 allDestroyedGems.Remove(specialGem);
             }
 
             // 執行普通寶石的消除
             if (allDestroyedGems.Count > 0)
             {
-                yield return board.StartCoroutine(board.消失與刪除寶石(allDestroyedGems));
+                yield return board.StartCoroutine(board.消失與刪除寶石(allDestroyedGems, false));
             }
 
-            // 依序觸發收集到的特殊寶石
+            // 追蹤所有特殊寶石的觸發狀態
+            var specialGemTasks = new List<bool>();
             foreach (var specialGem in specialGems)
             {
                 if (specialGem != null && specialGem.gameObject != null)
                 {
-                    yield return new WaitForSeconds(Board.DESTROY_DELAY); // 觸發間隔
-                    啟動特殊寶石(specialGem);
+                    yield return new WaitForSeconds(Board.DESTROY_DELAY);
+                    specialGemTasks.Add(false);
+                    int taskIndex = specialGemTasks.Count - 1;
+
+                    // 使用 board 來啟動協程
+                    board.StartCoroutine(WaitForSpecialGemComplete(specialGem, () => {
+                        specialGemTasks[taskIndex] = true;
+                    }));
                 }
             }
+
+            // 等待所有特殊寶石效果完成
+            while (specialGemTasks.Any(task => !task))
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
+
+            // 全部特殊寶石效果完成後，執行最終的消除和填滿
+            yield return board.StartCoroutine(board.消失與刪除寶石(allDestroyedGems, true));
+        }
+
+        // 等待特殊寶石完成的協程
+        private IEnumerator WaitForSpecialGemComplete(Gem specialGem, System.Action onComplete)
+        {
+            啟動特殊寶石(specialGem);
+            yield return board.StartCoroutine(觸發特殊寶石效果(specialGem));
+            onComplete?.Invoke();
         }
         List<Gem> lineV(List<Gem> allDestroyedGems, Gem gem)
         {
