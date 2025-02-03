@@ -537,33 +537,33 @@ namespace Match3Game
                         }
                     }
                     // 其他情況（兩個特殊寶石或純普通寶石）的處理
-                    else if (hasSpecialGem)
-                    {
-                        if (swappedGem1?.id >= 100)
-                        {
-                            specialGemActivator.啟動特殊寶石(swappedGem1);
-                            hasValidMatch = true;
-                        }
-                        if (swappedGem2?.id >= 100)
-                        {
-                            specialGemActivator.啟動特殊寶石(swappedGem2);
-                            hasValidMatch = true;
-                        }
+                    //else if (hasSpecialGem)
+                    //{
+                    //    if (swappedGem1?.id >= 100)
+                    //    {
+                    //        specialGemActivator.啟動特殊寶石(swappedGem1);
+                    //        hasValidMatch = true;
+                    //    }
+                    //    if (swappedGem2?.id >= 100)
+                    //    {
+                    //        specialGemActivator.啟動特殊寶石(swappedGem2);
+                    //        hasValidMatch = true;
+                    //    }
 
-                        // 檢查並處理後續匹配
-                        var matches = matchFinder.FindAllMatches();
-                        if (matches.Count > 0)
-                        {
-                            foreach (var match in matches)
-                            {
-                                foreach (var matchGem in match.matchedGems)
-                                {
-                                    if (matchGem != null) matchGem.isMatched = true;
-                                }
-                            }
-                            StartCoroutine(處理配對序列());
-                        }
-                    }
+                    //    // 檢查並處理後續匹配
+                    //    var matches = matchFinder.FindAllMatches();
+                    //    if (matches.Count > 0)
+                    //    {
+                    //        foreach (var match in matches)
+                    //        {
+                    //            foreach (var matchGem in match.matchedGems)
+                    //            {
+                    //                if (matchGem != null) matchGem.isMatched = true;
+                    //            }
+                    //        }
+                    //        StartCoroutine(處理配對序列());
+                    //    }
+                    //}
                     else
                     {
                         // 純普通寶石交換的處理
@@ -1167,13 +1167,6 @@ namespace Match3Game
         }
         private IEnumerator 刪除寶石序列(List<Gem> matchedGems)
         {
-            // 確保已初始化玩家觸發點
-            //if (byPlayer && (playerTriggerX == null || playerTriggerX.Length == 0))
-            //{
-            //    Debug.LogWarning("玩家觸發點未正確初始化");
-            //    byPlayer = false;
-            //}
-
             var processedGems = new HashSet<Gem>();
             var matches = matchFinder.FindAllMatches();  // 獲取匹配信息
 
@@ -1294,6 +1287,7 @@ namespace Match3Game
 
         private (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems) 確認要生成的特殊寶石(List<Gem> gems)
         {
+            Debug.Log($"匹配寶石數: {gems.Count} player：{byPlayer}");
             gems = gems.Distinct().ToList();  // 去除重複的寶石
             if (gems.Count < 4) // 修改為最少需要4個寶石才能生成特殊寶石
             {
@@ -1315,7 +1309,7 @@ namespace Match3Game
                     if (sortedGems[i].x == sortedGems[i - 1].x + 1)
                     {
                         consecutiveCount++;
-                        if (consecutiveCount >= 3) // 至少需要3個連續的
+                        if (consecutiveCount >= 2) // 至少需要3個連續的
                         {
                             hasHorizontalLine = true;
                             break;
@@ -1343,7 +1337,7 @@ namespace Match3Game
                     if (sortedGems[i].y == sortedGems[i - 1].y + 1)
                     {
                         consecutiveCount++;
-                        if (consecutiveCount >= 3) // 至少需要3個連續的
+                        if (consecutiveCount >= 2) // 至少需要3個連續的
                         {
                             hasVerticalLine = true;
                             break;
@@ -1371,22 +1365,26 @@ namespace Match3Game
                     resourceType = 2; // Bomb
                 }
             }
-            else if (gems.Count >= 5)
-            {
-                resourceType = 3; // Rainbow
-            }
-            else if (hasVerticalLine)
-            {
-                resourceType = 1; // 垂直清除線
-            }
-            else if (hasHorizontalLine)
-            {
-                resourceType = 0; // 水平清除線
-            }
             else
             {
-                resourceType = -1; // 不生成特殊寶石
+                if (gems.Count >= 5)
+                {
+                    resourceType = 3; // Rainbow
+                }
+                else if (hasVerticalLine)
+                {
+                    resourceType = 1; // 垂直清除線
+                }
+                else if (hasHorizontalLine)
+                {
+                    resourceType = 0; // 水平清除線
+                }
+                else
+                {
+                    resourceType = -1; // 不生成特殊寶石
+                }
             }
+            
 
             // Debug 輸出，幫助確認生成邏輯
             //Debug.Log($"匹配寶石數: {gems.Count}, 水平連線: {hasHorizontalLine}, " +
