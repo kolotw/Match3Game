@@ -13,8 +13,8 @@ public class MobileResolutionManager : MonoBehaviour
 
     [Tooltip("參考解析度")]
     public Vector2 referenceResolution = new Vector2(720, 1280);
-
-    void Start()
+    [SerializeField] Text nowRes;
+    void Awake()
     {
         if (IsMobilePlatform())
         {
@@ -37,6 +37,8 @@ public class MobileResolutionManager : MonoBehaviour
         // 獲取當前螢幕寬高
         int width = Screen.width;
         int height = Screen.height;
+
+        nowRes.text = $"Resolution: {width}x{height}";
 
         // 計算當前螢幕寬高比
         float currentAspect = (float)width / height;

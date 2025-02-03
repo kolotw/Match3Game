@@ -161,7 +161,6 @@ GameObject:
   - component: {fileID: 258291702}
   - component: {fileID: 258291703}
   - component: {fileID: 258291704}
-  - component: {fileID: 258291705}
   m_Layer: 0
   m_Name: Board
   m_TagString: Untagged
@@ -214,6 +213,7 @@ MonoBehaviour:
   matchPredictor: {fileID: 0}
   statusText: {fileID: 1768676954}
   gemsText: {fileID: 348896646}
+  nowRes: {fileID: 1358573173}
   gemPrefabs:
   - {fileID: 6396109961415817149, guid: 5d550a3750f0e334b94f52e8b95d22d1, type: 3}
   - {fileID: 2038196581494960673, guid: 42db343d095a7bc449566dcca1c7297b, type: 3}
@@ -227,22 +227,6 @@ MonoBehaviour:
   gem2: {fileID: 0}
   onError: 0
   byPlayer: 0
---- !u!114 &258291705
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258291700}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6b5ee8caf8cff914c8f255d3441925aa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  canvasScaler: {fileID: 1088441156}
-  mainCanvas: {fileID: 1088441157}
-  targetAspect: 0.5625
-  referenceResolution: {x: 720, y: 1280}
 --- !u!1 &348896644
 GameObject:
   m_ObjectHideFlags: 0
@@ -771,12 +755,12 @@ GameObject:
   - component: {fileID: 1358573174}
   - component: {fileID: 1358573173}
   m_Layer: 5
-  m_Name: byPlayer
+  m_Name: resolution
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1358573172
 RectTransform:
   m_ObjectHideFlags: 0
@@ -793,8 +777,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 30, y: -933}
-  m_SizeDelta: {x: 415.0661, y: 87.8196}
+  m_AnchoredPosition: {x: 0, y: -253.38513}
+  m_SizeDelta: {x: 415.0661, y: 89.5699}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1358573173
 MonoBehaviour:
@@ -823,13 +807,13 @@ MonoBehaviour:
     m_BestFit: 0
     m_MinSize: 4
     m_MaxSize: 56
-    m_Alignment: 3
+    m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: byPlayer
+  m_Text: 'resolution:'
 --- !u!222 &1358573174
 CanvasRenderer:
   m_ObjectHideFlags: 0

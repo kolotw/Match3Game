@@ -41,6 +41,7 @@ namespace Match3Game
         [SerializeField] public MatchPredictor matchPredictor;  // 匹配預測器
         [SerializeField] public Text statusText;  // 顯示遊戲狀態的UI文字
         [SerializeField] public Text gemsText;    // 顯示寶石數量的UI文字
+        [SerializeField] public Text nowRes;      // 顯示當前解析度的UI文字
         //[SerializeField] public Text playerPlayText;   
 
         // 寶石預製體數組
@@ -113,6 +114,14 @@ namespace Match3Game
             // 初始化遊戲的各個組件
             // 設置遊戲運行所需的各種輔助類別
             InitializeComponents();
+            // 強制直向
+            Screen.orientation = ScreenOrientation.Portrait;
+
+            // 獲取當前螢幕寬高
+            int width = Screen.width;
+            int height = Screen.height;
+
+            nowRes.text = $"{width}x{height}";
         }
 
         // Start 方法：在第一幀更新之前調用
