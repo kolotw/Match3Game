@@ -77,6 +77,20 @@ namespace Match3Game
         private const float FPS_UPDATE_INTERVAL = 0.5f;  // 性能指標更新間隔
         public const float FALL_DELAY = 0.05f;       // 寶石下落的延遲時間
         #endregion
+
+        #region smartPhone
+        [Header("Canvas References")]
+        public CanvasScaler canvasScaler;
+        public Canvas mainCanvas;
+
+        [Header("Resolution Settings")]
+        [Tooltip("目標直向寬高比")]
+        public float targetAspect = 1080f / 1785f;
+
+        [Tooltip("參考解析度")]
+        public Vector2 referenceResolution = new Vector2(1080, 1785);
+        #endregion
+
         #region 屬性
         // 遊戲狀態屬性
         // 提供對當前遊戲狀態的安全訪問和管理
@@ -131,8 +145,57 @@ namespace Match3Game
             // 初始化遊戲板
             // 設置遊戲板的初始狀態和佈局
             InitializeBoard();
+
+            if (IsMobilePlatform())
+            {
+                ConfigureMobileResolution();
+            }
         }
 
+        #region smartPhoneMethods
+        bool IsMobilePlatform()
+        {
+            return Application.platform == RuntimePlatform.WebGLPlayer &&
+                   (SystemInfo.deviceType == DeviceType.Handheld);
+        }
+
+        void ConfigureMobileResolution()
+        {
+            // 強制直向
+            Screen.orientation = ScreenOrientation.Portrait;
+
+            // 設置解析度
+            Screen.SetResolution(1080, 1785, true);
+
+            // 配置 CanvasScaler
+            if (canvasScaler != null)
+            {
+                canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                canvasScaler.referenceResolution = referenceResolution;
+                canvasScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+                canvasScaler.matchWidthOrHeight = 1f;
+            }
+
+            // 確保Canvas正確縮放
+            if (mainCanvas != null)
+            {
+                mainCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+            }
+
+            // 限制幀率
+            Application.targetFrameRate = 30;
+
+            Debug.Log($"Mobile Resolution Set: 1080x1785, Aspect: {targetAspect}");
+        }
+
+        void OnValidate()
+        {
+            if (Application.isPlaying && IsMobilePlatform())
+            {
+                ConfigureMobileResolution();
+            }
+        }
+        #endregion
         // Update 方法：每幀調用一次
         // 用於執行持續性的遊戲邏輯和性能監控
         private void Update()
