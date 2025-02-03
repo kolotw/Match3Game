@@ -16,26 +16,40 @@ namespace Match3Game
 
         public void 啟動特殊寶石(Gem gem)
         {
-            if (!ValidateGemPosition(gem, gem.x, gem.y))
+            // 如果寶石完全不存在，直接返回
+            if (gem == null) return;
+
+            // 特殊寶石組合的情況下，允許繼續執行
+            bool isSpecialCombo = gem.id >= 100 && (
+                board.gem1?.id >= 100 || board.gem2?.id >= 100
+            );
+
+            // 如果是特殊寶石組合，放寬驗證條件
+            if (isSpecialCombo || ValidateGemPosition(gem, gem.x, gem.y))
             {
-                Debug.LogWarning($"特殊寶石位置無效: ({gem.x}, {gem.y})");
-                return;
+                board.StartCoroutine(觸發特殊寶石效果(gem));
             }
-            board.StartCoroutine(觸發特殊寶石效果(gem));
         }
-        
+
         private bool ValidateGemPosition(Gem gem, int x, int y)
         {
-            return x >= 0 && x < board.width &&
-           y >= 0 && y < board.height &&
-           gem != null &&
-           gem.gameObject != null;
+            // 基本的邊界檢查
+            bool isValidPosition = x >= 0 && x < board.width &&
+                                 y >= 0 && y < board.height;
+
+            // 檢查是否在遊戲板上（對於非組合的情況）
+            bool isOnBoard = board.gems[x, y] == gem;
+
+            return isValidPosition;
         }
+        // 在 SpecialGemActivator.cs 中修改 觸發特殊寶石效果 方法
+
+        // 在 SpecialGemActivator.cs 中修改
+
         private IEnumerator 觸發特殊寶石效果(Gem gem)
         {
-            if (gem == null || gem.gameObject == null)
+            if (gem == null)
             {
-                Debug.LogWarning("嘗試啟動無效的特殊寶石");
                 yield break;
             }
 
@@ -55,58 +69,35 @@ namespace Match3Game
             // 收集要被消除的寶石
             CollectGemsToDestroy(gem, resType, allDestroyedGems);
 
-            // 在寶石被消除前，先找出其中的特殊寶石
+            // 找出特殊寶石
             var specialGems = allDestroyedGems
                 .Where(g => g != null && g != gem && g.id >= 100)
                 .ToList();
 
-            // 先移除要觸發的特殊寶石，避免它們被消除
+            // 將特殊寶石從消除列表中移除
             foreach (var specialGem in specialGems)
             {
-                //Debug.Log($"移除特殊寶石: {specialGem.id} ({specialGem.x}, {specialGem.y})");
                 allDestroyedGems.Remove(specialGem);
             }
 
-            // 執行普通寶石的消除
+            // 立即執行普通寶石的消除
             if (allDestroyedGems.Count > 0)
             {
-                yield return board.StartCoroutine(board.消失與刪除寶石(allDestroyedGems, false));
+                board.StartCoroutine(board.消失與刪除寶石(allDestroyedGems, false));
             }
 
-            // 追蹤所有特殊寶石的觸發狀態
-            var specialGemTasks = new List<bool>();
+            // 立即觸發所有特殊寶石
             foreach (var specialGem in specialGems)
             {
-                if (specialGem != null && specialGem.gameObject != null)
+                if (specialGem != null)
                 {
-                    yield return new WaitForSeconds(Board.DESTROY_DELAY);
-                    specialGemTasks.Add(false);
-                    int taskIndex = specialGemTasks.Count - 1;
-
-                    // 使用 board 來啟動協程
-                    board.StartCoroutine(WaitForSpecialGemComplete(specialGem, () => {
-                        specialGemTasks[taskIndex] = true;
-                    }));
+                    啟動特殊寶石(specialGem);
                 }
             }
 
-            // 等待所有特殊寶石效果完成
-            while (specialGemTasks.Any(task => !task))
-            {
-                yield return new WaitForSeconds(0.1f);
-            }
-
-            // 全部特殊寶石效果完成後，執行最終的消除和填滿
-            yield return board.StartCoroutine(board.消失與刪除寶石(allDestroyedGems, true));
+            yield return new WaitForSeconds(Board.DESTROY_DELAY);
         }
 
-        // 等待特殊寶石完成的協程
-        private IEnumerator WaitForSpecialGemComplete(Gem specialGem, System.Action onComplete)
-        {
-            啟動特殊寶石(specialGem);
-            yield return board.StartCoroutine(觸發特殊寶石效果(specialGem));
-            onComplete?.Invoke();
-        }
         List<Gem> lineV(List<Gem> allDestroyedGems, Gem gem)
         {
             for (int y = 0; y < board.height; y++)

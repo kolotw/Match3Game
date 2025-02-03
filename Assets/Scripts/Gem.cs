@@ -56,17 +56,9 @@ namespace Match3Game
         private void OnMouseDown()
         {
             if (isAnimating || !Board.instance.hasMoveCompleted ||
-        Board.instance == null) return;
+                Board.instance == null) return;
 
             Board.instance.byPlayer = true;
-
-            // 點擊資源寶石時直接觸發效果
-            //if (IsResourceGem && Input.GetMouseButtonDown(0))
-            //{
-            //    Board.instance.ActivateResourceGem(this);
-            //    return;
-            //}
-
             dragStart = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             isDragging = true;
         }
@@ -74,6 +66,17 @@ namespace Match3Game
         private void OnMouseUp()
         {
             isDragging = false;
+
+            // 檢查是否為特殊寶石且滑鼠點擊位置沒有明顯移動
+            if (IsResourceGem &&
+                Vector2.Distance(dragStart, Camera.main.ScreenToWorldPoint(Input.mousePosition)) < MIN_DRAG_DISTANCE)
+            {
+                // 使用 Board 實例中的 specialGemActivator
+                if (Board.instance != null && Board.instance.specialGemActivator != null)
+                {
+                    Board.instance.specialGemActivator.啟動特殊寶石(this);
+                }
+            }
         }
 
         private void TrySwap(Vector2Int targetPos)
@@ -103,6 +106,7 @@ namespace Match3Game
 
             Board.instance.嘗試交換寶石(x, y, targetPos.x, targetPos.y);
         }
+
         private IEnumerator MoveAndActivate(Vector2Int targetPos)
         {
             var targetGem = Board.instance.GetGem(targetPos.x, targetPos.y);
@@ -113,8 +117,12 @@ namespace Match3Game
             yield return new WaitForSeconds(0.3f / Board.instance.gemMoveSpeed);
 
             // 移動完後觸發效果
-            //Board.instance.specialGemActivator.啟動特殊寶石(this);
+            if (Board.instance != null && Board.instance.specialGemActivator != null)
+            {
+                Board.instance.specialGemActivator.啟動特殊寶石(this);
+            }
         }
+
         public IEnumerator AnimateMove(Vector3 target, float duration)
         {
             if (!IsValid()) yield break;
@@ -145,6 +153,5 @@ namespace Match3Game
                    Board.instance != null &&
                    Board.instance.gems[x, y] == this;
         }
-
     }
 }
