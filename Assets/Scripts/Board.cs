@@ -69,12 +69,12 @@ namespace Match3Game
         private BoardResetter boardResetter;  // 遊戲板重置器
 
         // 遊戲常數：定義各種動畫和操作的持續時間
-        public const float SWAP_DURATION = 0.1f;     // 寶石交換動畫持續時間
-        public const float DESTROY_DELAY = 0.2f;     // 寶石消除的延遲時間
+        public const float SWAP_DURATION = 0.05f;     // 寶石交換動畫持續時間
+        public const float DESTROY_DELAY = 0.01f;     // 寶石消除的延遲時間
         public const float COLLECT_DELAY = 0.01f;    // 收集寶石的延遲時間
         public const float COMPLETE_DELAY = 0.01f;   // 完成操作的延遲時間
         private const float FPS_UPDATE_INTERVAL = 0.5f;  // 性能指標更新間隔
-        public const float FALL_DELAY = 0.1f;       // 寶石下落的延遲時間
+        public const float FALL_DELAY = 0.05f;       // 寶石下落的延遲時間
         #endregion
         #region 屬性
         // 遊戲狀態屬性
@@ -99,6 +99,70 @@ namespace Match3Game
         }
         #endregion
 
+        #region onPhone
+        void Start()
+        {
+            // 初始化遊戲板
+            // 設置遊戲板的初始狀態和佈局
+            InitializeBoard();
+
+            // 檢查是否為手機平台
+            if (IsMobilePlatform())
+            {
+                // 手機專屬設置
+                ConfigureMobileSettings();
+            }
+            else
+            {
+                // 電腦或其他平台的預設設置
+                ConfigureDefaultSettings();
+            }
+        }
+
+        bool IsMobilePlatform()
+        {
+#if UNITY_ANDROID || UNITY_IOS
+        return true;
+#else
+            return false;
+#endif
+        }
+
+        void ConfigureMobileSettings()
+        {
+            // 鎖定直向模式
+            Screen.orientation = ScreenOrientation.Portrait;
+
+            // 動態設置解析度
+            int width = Screen.width;
+            int height = Screen.height;
+
+            // 保持16:9比例，但優先使用豎屏
+            float aspectRatio = 9f / 16f;
+
+            if ((float)width / height > aspectRatio)
+            {
+                width = (int)(height * aspectRatio);
+            }
+            else
+            {
+                height = (int)(width / aspectRatio);
+            }
+
+            Screen.SetResolution(width, height, true);
+
+            // 限制幀率以節省電池
+            Application.targetFrameRate = 30;
+        }
+
+        void ConfigureDefaultSettings()
+        {
+            // 預設桌面平台設置
+            Screen.SetResolution(1280, 720, false);
+            Application.targetFrameRate = 60;
+        }
+        #endregion
+
         #region 生命週期方法
         // Awake 方法：在遊戲物件被實例化時立即調用
         // 用於進行初始化設置，在 Start 方法之前執行
@@ -115,14 +179,7 @@ namespace Match3Game
             InitializeComponents();
         }
 
-        // Start 方法：在第一幀更新之前調用
-        // 用於執行遊戲開始時需要進行的初始化邏輯
-        public void Start()
-        {
-            // 初始化遊戲板
-            // 設置遊戲板的初始狀態和佈局
-            InitializeBoard();
-        }
+                
 
         // Update 方法：每幀調用一次
         // 用於執行持續性的遊戲邏輯和性能監控
@@ -289,13 +346,12 @@ namespace Match3Game
             // 計算動畫目標位置
             var pos1 = new Vector3(x2, y2, 0);
             var pos2 = new Vector3(x1, y1, 0);
-            float swapDuration = SWAP_DURATION;
 
             // 執行移動動畫
-            StartCoroutine(gem1.AnimateMove(pos1, swapDuration));
-            StartCoroutine(gem2.AnimateMove(pos2, swapDuration));
+            StartCoroutine(gem1.AnimateMove(pos1, SWAP_DURATION));
+            StartCoroutine(gem2.AnimateMove(pos2, SWAP_DURATION));
 
-            yield return new WaitForSeconds(swapDuration);
+            yield return new WaitForSeconds(SWAP_DURATION);
 
             // 檢查是否有匹配
             bool hasMatch = false;
@@ -312,10 +368,10 @@ namespace Match3Game
                 執行交換寶石(x2, y2, x1, y1);  // 交換回原始位置
 
                 // 執行返回動畫
-                StartCoroutine(gem1.AnimateMove(new Vector3(x1, y1, 0), swapDuration));
-                StartCoroutine(gem2.AnimateMove(new Vector3(x2, y2, 0), swapDuration));
+                StartCoroutine(gem1.AnimateMove(new Vector3(x1, y1, 0), SWAP_DURATION));
+                StartCoroutine(gem2.AnimateMove(new Vector3(x2, y2, 0), SWAP_DURATION));
 
-                yield return new WaitForSeconds(swapDuration);
+                yield return new WaitForSeconds(SWAP_DURATION);
             }
             else
             {
@@ -382,8 +438,8 @@ namespace Match3Game
                         if (combinationRules.TryGetValue(key, out int combinedResType))
                         {
                             // 在交換位置生成新的組合特殊寶石
-                            int triggerX = (swappedGem1.x + swappedGem2.x) / 2;
-                            int triggerY = (swappedGem1.y + swappedGem2.y) / 2;
+                            //int triggerX = (swappedGem1.x + swappedGem2.x) / 2;
+                            //int triggerY = (swappedGem1.y + swappedGem2.y) / 2;
 
                             //生成特殊寶石(triggerX, triggerY, combinedResType - 100);
                             處理特殊寶石的組合(swappedGem1, swappedGem2);
@@ -548,18 +604,6 @@ namespace Match3Game
                 StartCoroutine(落下寶石());
             }
         }
-
-        private IEnumerator 延遲處理特殊寶石(Gem swappedGem1, Gem swappedGem2)
-        {
-            // 等待一般寶石消除完成
-            yield return new WaitForSeconds(DESTROY_DELAY * 2);
-
-            if (處理特殊寶石的組合(swappedGem1, swappedGem2))
-            {
-                寶石交換已完成(true);
-            }
-        }
-
 
         // 新增一個輔助方法來設置觸發點 triggerX, triggerY
         // 修改 設置觸發點 方法
@@ -787,15 +831,6 @@ namespace Match3Game
             }
         }
 
-        private void 寶石交換已完成(bool successful)
-        {
-            if (gem1 != null) { gem1.isAnimating = false; Destroy(gem1.gameObject); }
-            if (gem2 != null) { gem2.isAnimating = false; Destroy(gem2.gameObject); }
-            isSwitching = false;
-            CurrentState = GameState.Ready;
-            matchPredictor?.ResetPredictionTimer();
-        }
-
         // 檢查遊戲板上是否存在寶石匹配
         // 這是遊戲核心邏輯的關鍵方法，用於偵測可消除的寶石組合
         public bool 偵測可消除的寶石組合()
@@ -868,31 +903,7 @@ namespace Match3Game
             // 再次等待，控制消除的節奏
             yield return new WaitForSeconds(DESTROY_DELAY);
         }
-        #endregion
-        // 當交換的寶石沒有匹配時，將寶石換回原位
-        private void 還原寶石位置()
-        {
-            //Debug.Log("沒有匹配，將寶石換回原位");
-
-            // 保存原始位置
-            int x1 = gem1.x, y1 = gem1.y;
-            int x2 = gem2.x, y2 = gem2.y;
-
-            // 更新數組引用
-            gems[x1, y1] = gem2;
-            gems[x2, y2] = gem1;
-
-            // 更新寶石的座標屬性
-            gem1.x = x2;
-            gem1.y = y2;
-            gem2.x = x1;
-            gem2.y = y1;
-
-            // 執行返回動畫
-            StartCoroutine(gem1.AnimateMove(new Vector3(x2, y2, 0), SWAP_DURATION));
-            StartCoroutine(gem2.AnimateMove(new Vector3(x1, y1, 0), SWAP_DURATION));
-        }
-        
+        #endregion        
 
         // 處理連鎖反應的協程
         // 檢測並處理填充後可能出現的連續匹配
@@ -1165,7 +1176,7 @@ namespace Match3Game
             foreach (var gem in specialGems)
             {
                 specialGemActivator.啟動特殊寶石(gem);
-                yield return new WaitForSeconds(DESTROY_DELAY * 2);
+                yield return new WaitForSeconds(DESTROY_DELAY);
             }
 
             // 2. 清除所有匹配的普通寶石並執行淡出動畫
@@ -1397,7 +1408,7 @@ namespace Match3Game
                 }
 
                 GameObject gemObj = Instantiate(resGemPrefabs[resType], transform);
-                Debug.Log($"生成特殊寶石: {resType} at ({x},{y}) type: {resType}");
+                //Debug.Log($"生成特殊寶石: {resType} at ({x},{y}) type: {resType}");
 
                 if (gemObj == null)
                 {
@@ -1523,7 +1534,7 @@ namespace Match3Game
             }
 
             // 確保所有新生成的寶石都已經就位
-            yield return new WaitForSeconds(FALL_DELAY * 2);
+            yield return new WaitForSeconds(FALL_DELAY);
             yield return 處理連鎖反應();
         }
         // 等待單個寶石下落完成的協程
