@@ -96,79 +96,79 @@ namespace Match3Game
         public List<Board.MatchInfo> FindAllMatches()
         {
             List<Board.MatchInfo> allMatches = new List<Board.MatchInfo>();
+            HashSet<(int x, int y)> processedPositions = new HashSet<(int x, int y)>();
 
-            // 用於追蹤已經被檢查過的寶石，避免重複處理
-            bool[,] processed = new bool[board.width, board.height];
-
-            // 水平方向配對檢測
-            for (int y = 0; y < board.height; y++)
-            {
-                for (int x = 0; x < board.width - 2; x++)
-                {
-                    // 跳過已處理或空的寶石
-                    if (processed[x, y] || board.gems[x, y] == null) continue;
-
-                    Board.MatchInfo match = CheckMatch(x, y, true);
-                    if (match != null)
-                    {
-                        // 標記已處理的寶石
-                        foreach (var gem in match.matchedGems)
-                        {
-                            processed[gem.x, gem.y] = true;
-                        }
-                        allMatches.Add(match);
-                    }
-                }
-            }
-
-            // 重置已處理標記，為垂直檢測做準備
-            processed = new bool[board.width, board.height];
-
-            // 垂直方向配對檢測
-            for (int x = 0; x < board.width; x++)
-            {
-                for (int y = 0; y < board.height - 2; y++)
-                {
-                    // 跳過已處理或空的寶石
-                    if (processed[x, y] || board.gems[x, y] == null) continue;
-
-                    Board.MatchInfo match = CheckMatch(x, y, false);
-                    if (match != null)
-                    {
-                        // 標記已處理的寶石
-                        foreach (var gem in match.matchedGems)
-                        {
-                            processed[gem.x, gem.y] = true;
-                        }
-                        allMatches.Add(match);
-                    }
-                }
-            }
-
-            // 特殊的十字配對檢測
+            // 先檢查特殊形狀（十字、T型和L型），因為這些可能產生特殊寶石
             for (int x = 0; x < board.width; x++)
             {
                 for (int y = 0; y < board.height; y++)
                 {
+                    if (board.gems[x, y] == null) continue;
+
+                    // 檢查十字形匹配
                     var specialCrossMatch = CheckSpecialCrossMatch(x, y);
                     if (specialCrossMatch != null)
                     {
                         allMatches.Add(specialCrossMatch);
+                        foreach (var gem in specialCrossMatch.matchedGems)
+                        {
+                            processedPositions.Add((gem.x, gem.y));
+                        }
+                        continue; // 找到十字形就跳過其他檢查
                     }
-                }
-            }
-            // 檢查 T型和L型配對
-            for (int x = 0; x < board.width; x++)
-            {
-                for (int y = 0; y < board.height; y++)
-                {
+
+                    // 檢查 T型和L型匹配
                     var tlMatch = CheckTLShapeMatch(x, y);
                     if (tlMatch != null)
                     {
                         allMatches.Add(tlMatch);
+                        foreach (var gem in tlMatch.matchedGems)
+                        {
+                            processedPositions.Add((gem.x, gem.y));
+                        }
+                        continue; // 找到T型或L型就跳過其他檢查
                     }
                 }
             }
+
+            // 檢查水平方向的普通匹配
+            for (int y = 0; y < board.height; y++)
+            {
+                for (int x = 0; x < board.width - 2; x++)
+                {
+                    if (board.gems[x, y] == null || processedPositions.Contains((x, y))) continue;
+
+                    Board.MatchInfo match = CheckMatch(x, y, true);
+                    if (match != null)
+                    {
+                        allMatches.Add(match);
+                        foreach (var gem in match.matchedGems)
+                        {
+                            processedPositions.Add((gem.x, gem.y));
+                        }
+                    }
+                }
+            }
+
+            // 檢查垂直方向的普通匹配
+            for (int x = 0; x < board.width; x++)
+            {
+                for (int y = 0; y < board.height - 2; y++)
+                {
+                    if (board.gems[x, y] == null || processedPositions.Contains((x, y))) continue;
+
+                    Board.MatchInfo match = CheckMatch(x, y, false);
+                    if (match != null)
+                    {
+                        allMatches.Add(match);
+                        foreach (var gem in match.matchedGems)
+                        {
+                            processedPositions.Add((gem.x, gem.y));
+                        }
+                    }
+                }
+            }
+
             return allMatches;
         }
         private Board.MatchInfo CheckSpecialCrossMatch(int centerX, int centerY)
