@@ -161,6 +161,7 @@ GameObject:
   - component: {fileID: 258291702}
   - component: {fileID: 258291703}
   - component: {fileID: 258291704}
+  - component: {fileID: 258291705}
   m_Layer: 0
   m_Name: Board
   m_TagString: Untagged
@@ -226,6 +227,22 @@ MonoBehaviour:
   gem2: {fileID: 0}
   onError: 0
   byPlayer: 0
+--- !u!114 &258291705
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 258291700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b5ee8caf8cff914c8f255d3441925aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  canvasScaler: {fileID: 1088441156}
+  mainCanvas: {fileID: 1088441157}
+  targetAspect: 0.5625
+  referenceResolution: {x: 720, y: 1280}
 --- !u!1 &348896644
 GameObject:
   m_ObjectHideFlags: 0

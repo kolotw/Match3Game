@@ -99,70 +99,6 @@ namespace Match3Game
         }
         #endregion
 
-        #region onPhone
-        void Start()
-        {
-            // 初始化遊戲板
-            // 設置遊戲板的初始狀態和佈局
-            InitializeBoard();
-
-            // 檢查是否為手機平台
-            if (IsMobilePlatform())
-            {
-                // 手機專屬設置
-                ConfigureMobileSettings();
-            }
-            else
-            {
-                // 電腦或其他平台的預設設置
-                ConfigureDefaultSettings();
-            }
-        }
-
-        bool IsMobilePlatform()
-        {
-#if UNITY_ANDROID || UNITY_IOS
-        return true;
-#else
-            return false;
-#endif
-        }
-
-        void ConfigureMobileSettings()
-        {
-            // 鎖定直向模式
-            Screen.orientation = ScreenOrientation.Portrait;
-
-            // 動態設置解析度
-            int width = Screen.width;
-            int height = Screen.height;
-
-            // 保持16:9比例，但優先使用豎屏
-            float aspectRatio = 9f / 16f;
-
-            if ((float)width / height > aspectRatio)
-            {
-                width = (int)(height * aspectRatio);
-            }
-            else
-            {
-                height = (int)(width / aspectRatio);
-            }
-
-            Screen.SetResolution(width, height, true);
-
-            // 限制幀率以節省電池
-            Application.targetFrameRate = 30;
-        }
-
-        void ConfigureDefaultSettings()
-        {
-            // 預設桌面平台設置
-            Screen.SetResolution(1280, 720, false);
-            Application.targetFrameRate = 60;
-        }
-        #endregion
-
         #region 生命週期方法
         // Awake 方法：在遊戲物件被實例化時立即調用
         // 用於進行初始化設置，在 Start 方法之前執行
@@ -179,7 +115,14 @@ namespace Match3Game
             InitializeComponents();
         }
 
-                
+        // Start 方法：在第一幀更新之前調用
+        // 用於執行遊戲開始時需要進行的初始化邏輯
+        public void Start()
+        {
+            // 初始化遊戲板
+            // 設置遊戲板的初始狀態和佈局
+            InitializeBoard();
+        }
 
         // Update 方法：每幀調用一次
         // 用於執行持續性的遊戲邏輯和性能監控
