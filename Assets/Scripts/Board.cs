@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using TMPro;
 
 namespace Match3Game
 {
@@ -39,9 +40,9 @@ namespace Match3Game
 
         // 遊戲邏輯相關的組件引用
         [SerializeField] public MatchPredictor matchPredictor;  // 匹配預測器
-        [SerializeField] public Text statusText;  // 顯示遊戲狀態的UI文字
-        [SerializeField] public Text gemsText;    // 顯示寶石數量的UI文字
-        [SerializeField] public Text nowRes;      // 顯示當前解析度的UI文字
+        [SerializeField] public TextMeshPro statusText;  // 顯示遊戲狀態的UI文字
+        [SerializeField] public TextMeshPro gemsText;    // 顯示寶石數量的UI文字
+        [SerializeField] public TextMeshPro nowRes;      // 顯示當前解析度的UI文字
         //[SerializeField] public Text playerPlayText;   
 
         // 寶石預製體數組
@@ -61,7 +62,8 @@ namespace Match3Game
         // 遊戲出錯標記
         public bool onError = false;
 
-        public bool byPlayer = false; // 是否由玩家操作 
+        //public bool byPlayer = false; // 是否由玩家操作 
+        private bool 由玩家觸發生成 = false;
 
         // 遊戲邏輯輔助類別
         private GemFactory gemFactory;        // 寶石工廠
@@ -72,10 +74,10 @@ namespace Match3Game
         // 遊戲常數：定義各種動畫和操作的持續時間
         public const float SWAP_DURATION = 0.05f;     // 寶石交換動畫持續時間
         public const float DESTROY_DELAY = 0.01f;     // 寶石消除的延遲時間
-        public const float COLLECT_DELAY = 0.01f;    // 收集寶石的延遲時間
+        public const float COLLECT_DELAY = 0.5f;    // 收集寶石的延遲時間
         public const float COMPLETE_DELAY = 0.01f;   // 完成操作的延遲時間
         private const float FPS_UPDATE_INTERVAL = 0.5f;  // 性能指標更新間隔
-        public const float FALL_DELAY = 0.05f;       // 寶石下落的延遲時間
+        public const float FALL_DELAY = 0.03f;       // 寶石下落的延遲時間
         #endregion
 
         #region smartPhone
@@ -297,7 +299,7 @@ namespace Match3Game
         // 這是玩家互動的核心方法
         public void 嘗試交換寶石(int x1, int y1, int x2, int y2)
         {
-            byPlayer = true;
+            由玩家觸發生成 = true;
             // 首先驗證移動的有效性
             // 檢查座標是否合法、是否為相鄰寶石等
             if (!ValidateMove(x1, y1, x2, y2)) return;
@@ -407,6 +409,7 @@ namespace Match3Game
             {
                 var swappedGem1 = gem1;
                 var swappedGem2 = gem2;
+                var processedGemIds = new HashSet<int>();  // 添加安全陣列
 
                 if (!IsValidSwapState())
                 {
@@ -438,7 +441,7 @@ namespace Match3Game
         };
 
                 // 玩家操作時的處理順序
-                if (byPlayer)
+                if (由玩家觸發生成)
                 {
                     // 1. 檢查是否是特殊寶石與普通寶石交換
                     Gem specialGem = swappedGem1?.id >= 100 ? swappedGem1 : swappedGem2;
@@ -460,7 +463,7 @@ namespace Match3Game
                             處理特殊寶石的組合(swappedGem1, swappedGem2);
 
                             // 移除原本的兩個特殊寶石
-                            StartCoroutine(淡出與刪除寶石(new HashSet<Gem> { swappedGem1, swappedGem2 }));
+                            StartCoroutine(淡出與刪除寶石(new HashSet<Gem> { swappedGem1, swappedGem2 }, processedGemIds));
                             hasValidMatch = true;
                         }
                     }
@@ -504,8 +507,16 @@ namespace Match3Game
                                         }
                                     }
 
-                                    // 執行消除動畫
-                                    StartCoroutine(淡出與刪除寶石(new HashSet<Gem>(matchGroup)));
+                                    foreach (var groupGem in matchGroup)
+                                    {
+                                        if (groupGem != null && IsValidPosition(groupGem.x, groupGem.y))
+                                        {
+                                            gems[groupGem.x, groupGem.y] = null;
+                                            processedGemIds.Remove(groupGem.GetInstanceID());  // 從安全陣列移除
+                                        }
+                                    }
+
+                                    StartCoroutine(淡出與刪除寶石(new HashSet<Gem>(matchGroup), processedGemIds));
 
                                     // 在原本普通寶石的位置生成新的特殊寶石
                                     生成特殊寶石(normalGem.x, normalGem.y, resourceType);
@@ -628,7 +639,7 @@ namespace Match3Game
 
             try
             {
-                if (byPlayer)
+                if (由玩家觸發生成)
                 {
                     // 記錄已經設置的觸發點位置
                     var usedPositions = new HashSet<(int x, int y)>();
@@ -682,45 +693,26 @@ namespace Match3Game
                 }
                 else
                 {
-                    // AI操作時的處理
+                    // 非玩家操作時，只負責記錄觸發點位置，不生成特殊寶石
                     var matchesByType = matches
                         .Where(m => m != null && m.matchedGems != null && m.matchedGems.Any())
                         .GroupBy(m => m.matchedGems[0].id);
 
-                    foreach (var group in matchesByType)
+                    foreach (var typeGroup in matchesByType)
                     {
-                        var consecutiveGems = new List<Gem>();
-                        foreach (var match in group)
+                        foreach (var match in typeGroup)
                         {
                             if (match.matchedGems == null) continue;
 
-                            // 檢查水平連續性
-                            var horizontalGems = match.matchedGems
-                                .GroupBy(g => g.y)
-                                .Where(g => g.Count() >= 3)
-                                .SelectMany(g => g.OrderBy(gem => gem.x))
-                                .Where((gem, i) => i == 0 ||
-                                    match.matchedGems.Any(prev =>
-                                        prev.x == gem.x - 1 && prev.y == gem.y));
-
-                            // 檢查垂直連續性  
-                            var verticalGems = match.matchedGems
-                                .GroupBy(g => g.x)
-                                .Where(g => g.Count() >= 3)
-                                .SelectMany(g => g.OrderBy(gem => gem.y))
-                                .Where((gem, i) => i == 0 ||
-                                    match.matchedGems.Any(prev =>
-                                        prev.y == gem.y - 1 && prev.x == gem.x));
-
-                            consecutiveGems.AddRange(horizontalGems);
-                            consecutiveGems.AddRange(verticalGems);
-                        }
-
-                        if (consecutiveGems.Any())
-                        {
-                            int randomIndex = UnityEngine.Random.Range(0, consecutiveGems.Count);
-                            triggerX = consecutiveGems[randomIndex].x;
-                            triggerY = consecutiveGems[randomIndex].y;
+                            // 記錄有效的匹配組，但不生成特殊寶石
+                            var validGems = match.matchedGems.Where(g => g != null).ToList();
+                            if (validGems.Any())
+                            {
+                                int randomIndex = UnityEngine.Random.Range(0, validGems.Count);
+                                triggerX = validGems[randomIndex].x;
+                                triggerY = validGems[randomIndex].y;
+                                break; // 只需要一個觸發點位置
+                            }
                         }
                     }
                 }
@@ -729,7 +721,7 @@ namespace Match3Game
             {
                 Debug.LogError($"設置觸發點時發生錯誤: {e.Message}\n{e.StackTrace}");
                 // 確保即使發生錯誤也有預設值
-                if (byPlayer)
+                if (由玩家觸發生成)
                 {
                     playerTriggerX = new int[1] { 0 };
                     playerTriggerY = new int[1] { 0 };
@@ -988,7 +980,7 @@ namespace Match3Game
         }
         // 填充遊戲板空白位置的協程
         // 負責在消除寶石後重新填滿遊戲板的空白格子
-        
+
         #region Match Processing
         // 銷毀遊戲板上匹配的寶石
         // 啟動消除匹配寶石的整體流程
@@ -1000,9 +992,9 @@ namespace Match3Game
             // 將所有匹配的寶石展平成一個列表
             // 使用 LINQ 的 SelectMany 方法合併所有匹配組中的寶石
             List<Gem> allMatchedGems = matches.SelectMany(m => m.matchedGems).ToList();
-            
+
             allMatchedGems = allMatchedGems.Distinct().ToList();  // 去除重複的寶石
-            
+
             // 啟動銷毀匹配寶石的協程
             // 傳入匹配的寶石列表和觸發消除的相關信息
             StartCoroutine(刪除寶石序列(allMatchedGems));
@@ -1168,98 +1160,149 @@ namespace Match3Game
         private IEnumerator 刪除寶石序列(List<Gem> matchedGems)
         {
             var processedGems = new HashSet<Gem>();
-            var matches = matchFinder.FindAllMatches();  // 獲取匹配信息
+            var matches = matchFinder.FindAllMatches();
+            var processedGemIds = new HashSet<int>();  // 移到外部，讓玩家和非玩家操作都能使用
 
-            // 設置觸發點
             設置觸發點(matches, gem1, gem2);
 
-            // 先找出所有連續的匹配組
             var matchGroups = matches.SelectMany(m => m.matchedGems)
                 .Where(gem => gem != null)
                 .GroupBy(gem => gem.id)
                 .SelectMany(group => GetContinuousGroups(group))
                 .Where(group => group.Count >= 4)
                 .ToList();
+            matchGroups = matchGroups.Distinct().ToList();
 
-            // 1. 先觸發要被消除的特殊寶石效果並等待效果完成
-            var specialGems = matchedGems.Where(g => g != null && g.id >= 100 && gems[g.x, g.y] == g).ToList();
+            // 先觸發要被消除的特殊寶石效果
+            var specialGems = matchedGems.Where(g =>
+                g != null &&
+                g.id >= 100 &&
+                gems[g.x, g.y] == g &&
+                !processedGemIds.Contains(g.GetInstanceID())).ToList();  // 排除已處理的寶石
+
             foreach (var gem in specialGems)
             {
                 specialGemActivator.啟動特殊寶石(gem);
                 yield return new WaitForSeconds(DESTROY_DELAY);
             }
 
-            // 2. 清除所有匹配的普通寶石並執行淡出動畫
-            foreach (var gem in matchedGems.Where(g => g != null && g.id < 100 && gems[g.x, g.y] == g))
+            // 清除匹配的普通寶石時，同時從安全陣列移除
+            foreach (var gem in matchedGems.Where(g =>
+                g != null &&
+                g.id < 100 &&
+                gems[g.x, g.y] == g &&
+                !processedGemIds.Contains(g.GetInstanceID())))
             {
                 processedGems.Add(gem);
                 gems[gem.x, gem.y] = null;
+                processedGemIds.Remove(gem.GetInstanceID());  // 從安全陣列移除
             }
 
-            yield return StartCoroutine(淡出與刪除寶石(processedGems));
+            // 在淡出與刪除寶石方法中也要處理
+            yield return StartCoroutine(淡出與刪除寶石(processedGems, processedGemIds));  // 傳入安全陣列
             yield return new WaitForSeconds(DESTROY_DELAY);
 
-            // 3. 在寶石下落前生成特殊寶石
-            if (byPlayer)
+            if (由玩家觸發生成)
             {
                 // 使用已經設置好的玩家觸發點來生成特殊寶石
                 for (int i = 0; i < matchGroups.Count && i < playerTriggerX.Length; i++)
                 {
-                    var group = matchGroups[i];
+                    var group = matchGroups[i]
+                        .Where(g => !processedGemIds.Contains(g.GetInstanceID()))
+                        .ToList();
+
+                    if (group.Count < 4) continue;  // 如果過濾後數量不夠就跳過
+
+                    // 使用已有的 GetContinuousGroups 檢查連續性
+                    var continuousGroups = GetContinuousGroups(group.GroupBy(g => g.id).First());
+                    if (!continuousGroups.Any(g => g.Count >= 4)) continue;
+
                     var (resourceType, isHorizontal, isVertical, _) = 確認要生成的特殊寶石(group);
                     if (resourceType != -1)
                     {
                         triggerX = playerTriggerX[i];
                         triggerY = playerTriggerY[i];
-
                         if (IsValidPosition(triggerX, triggerY))
                         {
-                            生成特殊寶石(triggerX, triggerY, resourceType);
+                            Debug.Log($"生成特殊寶石byPlayer: ,({triggerX}, {triggerY}),Res: {resourceType} count: {group.Count}");
+                            var newGem = 生成特殊寶石(triggerX, triggerY, resourceType);
+                            if (newGem != null)
+                            {
+                                processedGemIds.Add(newGem.GetInstanceID());
+                            }
+
+                            foreach (var gem in group)
+                            {
+                                processedGemIds.Add(gem.GetInstanceID());
+                            }
                         }
                     }
                 }
+                由玩家觸發生成 = false;
             }
             else
             {
-                // 非玩家操作時使用觸發點直接生成特殊寶石
+                //設置觸發點(matches, gem1, gem2);
                 foreach (var group in matchGroups)
                 {
+                    if (group.Any(g => processedGemIds.Contains(g.GetInstanceID())))
+                    {
+                        continue;  // 如果組中有任何已處理的寶石就跳過
+                    }
+
+                    // 檢查連續性
+                    var continuousGroups = GetContinuousGroups(group.GroupBy(g => g.id).First());
+                    if (!continuousGroups.Any(g => g.Count >= 4)) continue;
+
                     var (resourceType, isHorizontal, isVertical, _) = 確認要生成的特殊寶石(group.ToList());
                     if (resourceType != -1)
                     {
-                        if (IsValidPosition(triggerX, triggerY))
+                        // 從該組中隨機選擇一個位置作為特殊寶石的生成點
+                        var validGems = group.Where(g => !processedGemIds.Contains(g.GetInstanceID())).ToList();
+                        if (validGems.Any())
                         {
-                            生成特殊寶石(triggerX, triggerY, resourceType);
+                            int randomIndex = UnityEngine.Random.Range(0, validGems.Count);
+                            var selectedGem = validGems[randomIndex];
+                            triggerX = selectedGem.x;
+                            triggerY = selectedGem.y;
+
+                            Debug.Log($"非玩家操作時 - 在組內隨機位置({triggerX},{triggerY})生成特殊寶石 Type:{resourceType}");
+
+                            if (IsValidPosition(triggerX, triggerY))
+                            {
+                                var newGem = 生成特殊寶石(triggerX, triggerY, resourceType);
+                                if (newGem != null)
+                                {
+                                    processedGemIds.Add(newGem.GetInstanceID());
+                                }
+                                foreach (var gem in group)
+                                {
+                                    processedGemIds.Add(gem.GetInstanceID());
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // 4. 執行一次寶石下落
             yield return StartCoroutine(落下寶石());
-            byPlayer = false;
+
         }
 
         // 寶石淡出效果的協程
         // 提供視覺上平滑的消除動畫
-        public IEnumerator 淡出與刪除寶石(HashSet<Gem> gems)
+        public IEnumerator 淡出與刪除寶石(HashSet<Gem> gems, HashSet<int> safeIds)
         {
-            // 準備淡出效果的相關數據
-            // 收集每個寶石的渲染器和初始顏色
             var fadeData = gems.Select(gem => (
                 gem,
                 renderer: gem.GetComponent<SpriteRenderer>(),
                 startColor: gem.GetComponent<SpriteRenderer>().color
             )).ToList();
 
-            // 逐漸降低透明度
             float alpha = 1f;
             while (alpha > 0)
             {
-                // 根據遊戲速度計算透明度遞減速率
                 alpha -= FALL_DELAY;
-
-                // 安全地更新每個寶石的顏色透明度
                 foreach (var (gem, renderer, startColor) in fadeData)
                 {
                     if (gem != null && gem.gameObject != null && renderer != null)
@@ -1272,14 +1315,15 @@ namespace Match3Game
                         );
                     }
                 }
-                yield return null;  // 等待下一幀
+                yield return null;
             }
 
-            // 銷毀已完成淡出的寶石遊戲物件
+            // 銷毀寶石時同時從安全陣列移除
             foreach (var (gem, _, _) in fadeData)
             {
                 if (gem != null && gem.gameObject != null)
                 {
+                    safeIds.Remove(gem.GetInstanceID());  // 從安全陣列移除
                     Destroy(gem.gameObject);
                 }
             }
@@ -1287,8 +1331,8 @@ namespace Match3Game
 
         private (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems) 確認要生成的特殊寶石(List<Gem> gems)
         {
-            Debug.Log($"匹配寶石數: {gems.Count} player：{byPlayer}");
-            gems = gems.Distinct().ToList();  // 去除重複的寶石
+            //Debug.Log($"確認要生成的特殊寶石 - 匹配寶石數: {gems.Count} player：{byPlayer}");
+            //gems = gems.Distinct().ToList();  // 去除重複的寶石
             if (gems.Count < 4) // 修改為最少需要4個寶石才能生成特殊寶石
             {
                 return (-1, false, false, new List<Gem>());
@@ -1358,11 +1402,13 @@ namespace Match3Game
             {
                 if (gems.Count >= 6)
                 {
-                    resourceType = 3; // Rainbow
+                    //resourceType = 3; // Rainbow
+                    return (3, hasHorizontalLine, hasVerticalLine, gems);
                 }
                 else
                 {
-                    resourceType = 2; // Bomb
+                    //resourceType = 2; // Bomb
+                    return (2, hasHorizontalLine, hasVerticalLine, gems);
                 }
             }
             else
@@ -1384,12 +1430,12 @@ namespace Match3Game
                     resourceType = -1; // 不生成特殊寶石
                 }
             }
-            
+
 
             // Debug 輸出，幫助確認生成邏輯
-            //Debug.Log($"匹配寶石數: {gems.Count}, 水平連線: {hasHorizontalLine}, " +
-            //          $"垂直連線: {hasVerticalLine}, 角落匹配: {isCornerMatch}, " +
-            //          $"生成類型: {resourceType} player：{byPlayer}");
+            //Debug.Log($"數: {gems.Count}, 平: {hasHorizontalLine}, " +
+            //          $"直: {hasVerticalLine}, 角: {isCornerMatch}, " +
+            //          $"型: {resourceType} player：{byPlayer} isSwitching: {isSwitching}");
 
             return (resourceType, hasHorizontalLine, hasVerticalLine, gems);
         }
@@ -1397,55 +1443,30 @@ namespace Match3Game
 
         // 創建特殊資源寶石的方法
         // 實際生成特殊寶石遊戲物件的邏輯
-        private void 生成特殊寶石(int x, int y, int resType)
+        private Gem 生成特殊寶石(int x, int y, int resType)
         {
-            // 確保 resType 在有效範圍內
-            if (resGemPrefabs == null)
+            if (resGemPrefabs == null || resType >= resGemPrefabs.Length)
             {
-                Debug.LogError($"Resource gem prefabs array is null");
-                return;
-            }
-
-            if (resType < 0 || resType >= resGemPrefabs.Length)
-            {
-                Debug.LogError($"Invalid resource type {resType}. Valid range is 0 to {resGemPrefabs.Length - 1}");
-                // 如果是無效的 resType，使用預設類型（例如第一種特殊寶石）
-                resType = 0;
+                Debug.LogError($"Invalid resource type {resType}");
+                return null;
             }
 
             try
             {
-                // 檢查預製件是否存在
-                if (resGemPrefabs[resType] == null)
-                {
-                    Debug.LogError($"Resource gem prefab at index {resType} is null");
-                    return;
-                }
-
                 GameObject gemObj = Instantiate(resGemPrefabs[resType], transform);
-                //Debug.Log($"生成特殊寶石: {resType} at ({x},{y}) type: {resType}");
-
-                if (gemObj == null)
-                {
-                    Debug.LogError($"Failed to instantiate resource gem of type {resType}");
-                    return;
-                }
-
                 Gem gem = gemObj.GetComponent<Gem>();
-                if (gem == null)
+                if (gem != null)
                 {
-                    Debug.LogError($"Instantiated resource gem object has no Gem component");
-                    Destroy(gemObj);
-                    return;
+                    gem.Init(100 + resType, x, y);
+                    gems[x, y] = gem;
+                    return gem;
                 }
-
-                gem.Init(100 + resType, x, y);
-                gems[x, y] = gem;
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"Error creating resource gem: {e.Message}\nStack trace: {e.StackTrace}");
+                Debug.LogError($"Error creating resource gem: {e.Message}");
             }
+            return null;
         }
 
         // 使寶石下落並填補空白位置的協程
@@ -1456,7 +1477,6 @@ namespace Match3Game
             do
             {
                 hasFalling = false;
-
                 // 從底部開始向上檢查，確保下層寶石先處理
                 for (int y = 0; y < height - 1; y++)
                 {
@@ -1480,20 +1500,56 @@ namespace Match3Game
                                 gem.y = y;
 
                                 // 執行下落動畫
-                                StartCoroutine(gem.AnimateMove(new Vector3(x, y, 0), FALL_DELAY));
+                                yield return StartCoroutine(gem.AnimateMove(new Vector3(x, y, 0), FALL_DELAY));
                                 hasFalling = true;
                             }
                         }
                     }
                 }
-
-                // 等待所有寶石完成當前的下落動作
-                yield return new WaitForSeconds(FALL_DELAY);
-
             } while (hasFalling);
 
             // 填充空位
             yield return StartCoroutine(填滿空位(-1));
+        }
+
+        private IEnumerator 處理單列下落(int x)
+        {
+            bool hasMoreFalling;
+            do
+            {
+                hasMoreFalling = false;
+
+                // 從底部開始向上檢查
+                for (int y = 0; y < height - 1; y++)
+                {
+                    if (gems[x, y] == null)
+                    {
+                        // 找到這個位置上方最近的寶石
+                        int above = y + 1;
+                        while (above < height && gems[x, above] == null)
+                        {
+                            above++;
+                        }
+
+                        // 如果找到了寶石，讓它下落
+                        if (above < height && gems[x, above] != null)
+                        {
+                            var gem = gems[x, above];
+                            gems[x, y] = gem;
+                            gems[x, above] = null;
+                            gem.y = y;
+
+                            // 計算下落距離和時間
+                            float fallDistance = above - y;
+                            float fallDuration = FALL_DELAY * fallDistance;
+
+                            // 等待這個寶石的下落動畫完成
+                            yield return StartCoroutine(gem.AnimateMove(new Vector3(x, y, 0), fallDuration));
+                            hasMoreFalling = true;
+                        }
+                    }
+                }
+            } while (hasMoreFalling);
         }
 
         public IEnumerator 填滿空位(int resType)
@@ -1501,41 +1557,60 @@ namespace Match3Game
             CurrentState = GameState.Filling;
             matchPredictor?.StopTimer();
 
-            var positionsToFill = new List<(int x, int y)>();
-
-            // 第一步：收集所有需要填充的位置
+            // 逐列處理
             for (int x = 0; x < width; x++)
             {
-                for (int y = 0; y < height; y++)
+                bool columnComplete;
+                do
                 {
-                    if (gems[x, y] == null && !檢查上方為空(x, y))
+                    columnComplete = true;
+                    // 從底部開始檢查
+                    for (int y = 0; y < height; y++)
                     {
-                        positionsToFill.Add((x, y));
+                        if (gems[x, y] == null)
+                        {
+                            int dropDelay = 0;
+                            生成與掉落寶石(x, y, ref dropDelay);
+                            yield return new WaitForSeconds(FALL_DELAY);
+
+                            // 確認是否真的填充了
+                            if (gems[x, y] == null)
+                            {
+                                columnComplete = false;
+                                Debug.LogError($"位置 ({x}, {y}) 填充失敗");
+                            }
+                        }
                     }
-                }
+                } while (!columnComplete); // 如果這一列還有空位，就重新處理這一列
             }
 
-            // 第二步：按列從左到右，從下到上填充
-            foreach (var column in positionsToFill.GroupBy(p => p.x).OrderBy(g => g.Key))
+            yield return 處理連鎖反應();
+        }
+
+        private IEnumerator 處理單列填充(int x, int resType)
+        {
+            int dropDelay = 0;
+            bool needsFilling;
+
+            do
             {
-                int dropDelay = 0;
-                foreach (var (x, y) in column.OrderBy(p => p.y))
+                needsFilling = false;
+
+                // 從底部開始向上檢查
+                for (int y = 0; y < height; y++)
                 {
-                    // 再次確認該位置確實為空
                     if (gems[x, y] == null)
                     {
                         if (resType == -1)
                         {
                             生成與掉落寶石(x, y, ref dropDelay);
+                            needsFilling = true;
+                            // 等待這個寶石的下落動畫完成
                             yield return new WaitForSeconds(FALL_DELAY);
                         }
                     }
                 }
-            }
-
-            // 確保所有新生成的寶石都已經就位
-            yield return new WaitForSeconds(FALL_DELAY);
-            yield return 處理連鎖反應();
+            } while (needsFilling);
         }
         // 等待單個寶石下落完成的協程
         // 控制個別寶石的下落動畫和回調
@@ -1668,7 +1743,7 @@ namespace Match3Game
 
             // 定期清理遊戲板
             // 每300幀執行一次清理操作，優化遊戲性能和資源管理
-            if (Time.frameCount % 300 == 0)
+            if (Time.frameCount % 100 == 0)
             {
                 CleanupBoard();
             }
@@ -1755,21 +1830,55 @@ namespace Match3Game
         // 定期移除無效或殘留的遊戲物件，優化遊戲性能和資源管理
         private void CleanupBoard()
         {
-            // 遍歷遊戲板上的所有子物件
-            // 這包括遊戲板上的所有寶石和其他遊戲物件
             foreach (Transform child in transform)
             {
-                // 嘗試獲取寶石組件
-                // 確定這個子物件是否是一個有效的寶石
                 Gem gemComponent = child.GetComponent<Gem>();
 
-                // 如果找到寶石組件，並且該寶石在遊戲板上已經無效
-                // 將其從遊戲場景中移除
                 if (gemComponent != null && !IsGemValid(gemComponent))
                 {
-                    // 銷毀無效的遊戲物件
-                    // 釋放佔用的記憶體和資源
-                    Destroy(child.gameObject);
+                    if (gemComponent.id >= 100)
+                    {
+                        //Debug.LogError($"★★★發現無效特殊寶石★★★ id: {gemComponent.id} , ({gemComponent.x},{gemComponent.y})");
+                        // 嘗試修復特殊寶石
+                        if (IsValidPosition(gemComponent.x, gemComponent.y))
+                        {
+                            // 如果位置是有效的，直接登錄到 gems 陣列
+                            gems[gemComponent.x, gemComponent.y] = gemComponent;
+                            Debug.Log($"已修復特殊寶石在位置 ({gemComponent.x},{gemComponent.y})");
+                        }
+                        else
+                        {
+                            // 如果位置無效，嘗試找一個最近的有效位置
+                            bool found = false;
+                            for (int x = 0; x < width && !found; x++)
+                            {
+                                for (int y = 0; y < height && !found; y++)
+                                {
+                                    if (gems[x, y] == null)
+                                    {
+                                        // 找到空位置，重新設置寶石位置
+                                        gemComponent.x = x;
+                                        gemComponent.y = y;
+                                        gems[x, y] = gemComponent;
+                                        gemComponent.transform.position = new Vector3(x, y, 0);
+                                        found = true;
+                                        Debug.Log($"已將特殊寶石重新放置到位置 ({x},{y})");
+                                    }
+                                }
+                            }
+
+                            if (!found)
+                            {
+                                Debug.LogError("無法找到有效位置，不得不銷毀特殊寶石");
+                                Destroy(child.gameObject);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log($"★★★發現無效普通寶石★★★ id: {gemComponent.id} , ({gemComponent.x},{gemComponent.y})");
+                        Destroy(child.gameObject);
+                    }
                 }
             }
         }

@@ -58,7 +58,6 @@ namespace Match3Game
             if (isAnimating || !Board.instance.hasMoveCompleted ||
                 Board.instance == null) return;
 
-            Board.instance.byPlayer = true;
             dragStart = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             isDragging = true;
         }
@@ -66,7 +65,7 @@ namespace Match3Game
         private void OnMouseUp()
         {
             isDragging = false;
-
+            
             // 檢查是否為特殊寶石且滑鼠點擊位置沒有明顯移動
             if (IsResourceGem &&
                 Vector2.Distance(dragStart, Camera.main.ScreenToWorldPoint(Input.mousePosition)) < MIN_DRAG_DISTANCE)
