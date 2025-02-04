@@ -80,19 +80,7 @@ namespace Match3Game
         public const float FALL_DELAY = 0.03f;       // 寶石下落的延遲時間
         #endregion
 
-        #region smartPhone
-        [Header("Canvas References")]
-        public CanvasScaler canvasScaler;
-        public Canvas mainCanvas;
-
-        [Header("Resolution Settings")]
-        [Tooltip("目標直向寬高比")]
-        public float targetAspect = 1080f / 1785f;
-
-        [Tooltip("參考解析度")]
-        public Vector2 referenceResolution = new Vector2(1080, 1785);
-        #endregion
-
+        
         #region 屬性
         // 遊戲狀態屬性
         // 提供對當前遊戲狀態的安全訪問和管理
@@ -147,57 +135,8 @@ namespace Match3Game
             // 初始化遊戲板
             // 設置遊戲板的初始狀態和佈局
             InitializeBoard();
-
-            if (IsMobilePlatform())
-            {
-                ConfigureMobileResolution();
-            }
         }
 
-        #region smartPhoneMethods
-        bool IsMobilePlatform()
-        {
-            return Application.platform == RuntimePlatform.WebGLPlayer &&
-                   (SystemInfo.deviceType == DeviceType.Handheld);
-        }
-
-        void ConfigureMobileResolution()
-        {
-            // 強制直向
-            Screen.orientation = ScreenOrientation.Portrait;
-
-            // 設置解析度
-            Screen.SetResolution(1080, 1785, true);
-
-            // 配置 CanvasScaler
-            if (canvasScaler != null)
-            {
-                canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                canvasScaler.referenceResolution = referenceResolution;
-                canvasScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-                canvasScaler.matchWidthOrHeight = 1f;
-            }
-
-            // 確保Canvas正確縮放
-            if (mainCanvas != null)
-            {
-                mainCanvas.renderMode = RenderMode.ScreenSpaceCamera;
-            }
-
-            // 限制幀率
-            Application.targetFrameRate = 30;
-
-            Debug.Log($"Mobile Resolution Set: 1080x1785, Aspect: {targetAspect}");
-        }
-
-        void OnValidate()
-        {
-            if (Application.isPlaying && IsMobilePlatform())
-            {
-                ConfigureMobileResolution();
-            }
-        }
-        #endregion
         // Update 方法：每幀調用一次
         // 用於執行持續性的遊戲邏輯和性能監控
         private void Update()
@@ -433,10 +372,10 @@ namespace Match3Game
             
             // 不同寶石組合
             {(100, 101), 104}, // LineH + LineV = Cross
-            {(100, 102), 110}, // LineH + Bomb = RandomHLines
-            {(100, 103), 107}, // LineH + Rainbow = ThreeHLines
-            {(101, 102), 111}, // LineV + Bomb = RandomVLines
-            {(101, 103), 108}, // LineV + Rainbow = ThreeVLines
+            {(100, 102), 110}, // LineH + Bomb = ThreeHLines
+            {(100, 103), 107}, // LineH + Rainbow = RandomHLines
+            {(101, 102), 111}, // LineV + Bomb = ThreeVLines
+            {(101, 103), 108}, // LineV + Rainbow = RandomVLines
             {(102, 103), 109}, // Bomb + Rainbow = MultiBomb
         };
 
@@ -547,34 +486,7 @@ namespace Match3Game
                             StartCoroutine(處理配對序列());
                         }
                     }
-                    // 其他情況（兩個特殊寶石或純普通寶石）的處理
-                    //else if (hasSpecialGem)
-                    //{
-                    //    if (swappedGem1?.id >= 100)
-                    //    {
-                    //        specialGemActivator.啟動特殊寶石(swappedGem1);
-                    //        hasValidMatch = true;
-                    //    }
-                    //    if (swappedGem2?.id >= 100)
-                    //    {
-                    //        specialGemActivator.啟動特殊寶石(swappedGem2);
-                    //        hasValidMatch = true;
-                    //    }
-
-                    //    // 檢查並處理後續匹配
-                    //    var matches = matchFinder.FindAllMatches();
-                    //    if (matches.Count > 0)
-                    //    {
-                    //        foreach (var match in matches)
-                    //        {
-                    //            foreach (var matchGem in match.matchedGems)
-                    //            {
-                    //                if (matchGem != null) matchGem.isMatched = true;
-                    //            }
-                    //        }
-                    //        StartCoroutine(處理配對序列());
-                    //    }
-                    //}
+                    
                     else
                     {
                         // 純普通寶石交換的處理
@@ -609,13 +521,13 @@ namespace Match3Game
                         StartCoroutine(處理配對序列());
                         hasValidMatch = true;
                     }
-                    else if (hasSpecialGem)
-                    {
-                        if (處理特殊寶石的組合(swappedGem1, swappedGem2))
-                        {
-                            hasValidMatch = true;
-                        }
-                    }
+                    //else if (hasSpecialGem)
+                    //{
+                    //    //if (處理特殊寶石的組合(swappedGem1, swappedGem2))
+                    //    //{
+                    //    //    hasValidMatch = true;
+                    //    //}
+                    //}
                 }
 
                 if (!hasValidMatch)
@@ -800,13 +712,13 @@ namespace Match3Game
             
             // 不同寶石組合
             {(100, 101), 104}, // LineH + LineV = Cross
-            {(100, 102), 110}, // LineH + Bomb = RandomHLines
-            {(100, 103), 107}, // LineH + Rainbow = ThreeHLines
-            {(101, 102), 111}, // LineV + Bomb = RandomVLines
-            {(101, 103), 108}, // LineV + Rainbow = ThreeVLines
+            {(100, 102), 110}, // LineH + Bomb = ThreeHLines
+            {(100, 103), 107}, // LineH + Rainbow = RandomHLines
+            {(101, 102), 111}, // LineV + Bomb = ThreeVLines
+            {(101, 103), 108}, // LineV + Rainbow = RandomVLines
             {(102, 103), 109}, // Bomb + Rainbow = MultiBomb
         };
-
+                
                 // 處理一般寶石與特殊寶石的組合
                 bool firstIsSpecial = first.id >= 100;
                 bool secondIsSpecial = second.id >= 100;
@@ -817,9 +729,10 @@ namespace Match3Game
                     var key = (Math.Min(first.id, second.id), Math.Max(first.id, second.id));
                     if (combinationRules.TryGetValue(key, out int resultId))
                     {
+                        Debug.Log($"組合: {resultId} ");
                         // 只創建一個新的特殊寶石效果
                         first.id = resultId;
-                        specialGemActivator.啟動特殊寶石(first);
+                        //specialGemActivator.啟動特殊寶石(first); //刪掉後不影響耶！ 看來可以刪喔！
                         // 不要呼叫 second 的效果，它會在觸發特殊寶石時一起被消除
                         return true;
                     }
@@ -828,6 +741,7 @@ namespace Match3Game
                 {
                     // 一般寶石和特殊寶石的組合
                     Gem specialGem = firstIsSpecial ? first : second;
+                    Debug.Log($"特殊寶石組合: {specialGem.id} @ ({specialGem.x},{specialGem.y})"); //沒有耶
                     specialGemActivator.啟動特殊寶石(specialGem);
                     return true;
                 }
@@ -1876,7 +1790,7 @@ namespace Match3Game
                     }
                     else
                     {
-                        Debug.Log($"★★★發現無效普通寶石★★★ id: {gemComponent.id} , ({gemComponent.x},{gemComponent.y})");
+                        //Debug.Log($"★★★發現無效普通寶石★★★ id: {gemComponent.id} , ({gemComponent.x},{gemComponent.y})");
                         Destroy(child.gameObject);
                     }
                 }

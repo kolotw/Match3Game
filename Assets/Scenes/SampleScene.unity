@@ -226,10 +226,6 @@ MonoBehaviour:
   gem1: {fileID: 0}
   gem2: {fileID: 0}
   onError: 0
-  canvasScaler: {fileID: 1088441156}
-  mainCanvas: {fileID: 1088441157}
-  targetAspect: 0.60504204
-  referenceResolution: {x: 1080, y: 1785}
 --- !u!1 &348896644
 GameObject:
   m_ObjectHideFlags: 0
@@ -1169,7 +1165,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1088441155
 MonoBehaviour:
   m_ObjectHideFlags: 0
