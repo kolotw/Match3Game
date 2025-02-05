@@ -1120,7 +1120,7 @@ namespace Match3Game
 
         // 淡出並銷毀指定的寶石列表的協程
         // 提供了一個安全、視覺上平滑的寶石消除機制
-        public IEnumerator 消失與刪除寶石(List<Gem> gemsToDestroy, bool autoFill = true)
+        public IEnumerator 消失與刪除寶石(List<Gem> gemsToDestroy)
         {
             if (gemsToDestroy == null || gemsToDestroy.Count == 0)
             {
@@ -1167,11 +1167,7 @@ namespace Match3Game
                 }
             }
 
-            // 只有在 autoFill 為 true 時才執行填充
-            //if (autoFill)
-            {
-                yield return StartCoroutine(落下寶石五());
-            }
+            yield return StartCoroutine(落下寶石五());
         }
 
         // 更新遊戲狀態文字的方法

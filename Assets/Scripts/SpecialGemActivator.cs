@@ -83,7 +83,7 @@ namespace Match3Game
             // 立即執行普通寶石的消除
             if (allDestroyedGems.Count > 0)
             {
-                board.StartCoroutine(board.消失與刪除寶石(allDestroyedGems, false));
+                board.StartCoroutine(board.消失與刪除寶石(allDestroyedGems));
             }
 
             // 立即觸發所有特殊寶石
