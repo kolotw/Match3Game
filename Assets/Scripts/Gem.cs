@@ -103,7 +103,7 @@ namespace Match3Game
                 return;
             }
 
-            Board.instance.嘗試交換寶石(x, y, targetPos.x, targetPos.y);
+            Board.instance.嘗試交換寶石一(x, y, targetPos.x, targetPos.y);
         }
 
         private IEnumerator MoveAndActivate(Vector2Int targetPos)
@@ -112,7 +112,7 @@ namespace Match3Game
             if (targetGem == null) yield break;
 
             // 先移動
-            Board.instance.嘗試交換寶石(x, y, targetPos.x, targetPos.y);
+            Board.instance.嘗試交換寶石一(x, y, targetPos.x, targetPos.y);
             yield return new WaitForSeconds(0.3f / Board.instance.gemMoveSpeed);
 
             // 移動完後觸發效果

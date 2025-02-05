@@ -101,7 +101,7 @@ namespace Match3Game
             yield return StartCoroutine(board.消失與刪除寶石(allGems));
 
             // 重新填滿棋盤
-            yield return StartCoroutine(board.填滿空位(-1));
+            yield return StartCoroutine(board.填滿空位六(-1));
             isResetting = false;
             ResetPredictionTimer();
         }
