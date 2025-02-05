@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -386,17 +385,17 @@ namespace Match3Game
                         {
                             // 找出包含該普通寶石的匹配組
                             var matchGroup = matchesForNormalGem
-                                .SelectMany(m => m.matchedGems)
-                                .Where(gem => gem != null)
-                                .GroupBy(gem => gem.id)
-                                .SelectMany(group => 尋找連續寶石組別(group))
-                                .Where(group => group.Count >= 4)
-                                .FirstOrDefault();
+                                                            .SelectMany(m => m.matchedGems)
+                                                            .Where(gem => gem != null)
+                                                            .GroupBy(gem => gem.id)
+                                                            .SelectMany(group => MatchUtils.FindContinuousGemGroups(group))
+                                                            .Where(group => group.Count >= 4)
+                                                            .FirstOrDefault();
 
                             if (matchGroup != null)
                             {
                                 // 3. 確認是否可以生成特殊寶石
-                                var (resourceType, isHorizontal, isVertical, _) = 確認要生成的特殊寶石(matchGroup);
+                                var (resourceType, isHorizontal, isVertical, _) = MatchUtils.確認特殊寶石類別(matchGroup);
                                 if (resourceType != -1)
                                 {
                                     // 4. 先在普通寶石位置生成新的特殊寶石
@@ -489,13 +488,6 @@ namespace Match3Game
                         StartCoroutine(處理配對序列());
                         hasValidMatch = true;
                     }
-                    //else if (hasSpecialGem)
-                    //{
-                    //    //if (處理特殊寶石的組合(swappedGem1, swappedGem2))
-                    //    //{
-                    //    //    hasValidMatch = true;
-                    //    //}
-                    //}
                 }
 
                 if (!hasValidMatch)
@@ -613,7 +605,6 @@ namespace Match3Game
             }
         }
 
-        // 新增的輔助方法
         private bool IsValidSwapState()
         {
             try
@@ -664,55 +655,13 @@ namespace Match3Game
         {
             try
             {
-                // 如果都不是特殊寶石，直接返回
-                if (first.id < 100 && second.id < 100)
+                var (success, resultType) = MatchUtils.CheckSpecialGemCombination(first, second);
+                if (success)
                 {
-                    return false;
-                }
-
-                var combinationRules = new Dictionary<(int, int), int>
-        {
-            // 相同寶石組合
-            {(100, 100), 104}, {(101, 101), 104}, // LineH/V + LineH/V = Cross
-            {(102, 102), 105}, // Bomb + Bomb = BigBomb
-            {(103, 103), 106}, // Rainbow + Rainbow = DestroyAll
-            
-            // 不同寶石組合
-            {(100, 101), 104}, // LineH + LineV = Cross
-            {(100, 102), 110}, // LineH + Bomb = ThreeHLines
-            {(100, 103), 107}, // LineH + Rainbow = RandomHLines
-            {(101, 102), 111}, // LineV + Bomb = ThreeVLines
-            {(101, 103), 108}, // LineV + Rainbow = RandomVLines
-            {(102, 103), 109}, // Bomb + Rainbow = MultiBomb
-        };
-                
-                // 處理一般寶石與特殊寶石的組合
-                bool firstIsSpecial = first.id >= 100;
-                bool secondIsSpecial = second.id >= 100;
-
-                if (firstIsSpecial && secondIsSpecial)
-                {
-                    // 兩個都是特殊寶石的情況
-                    var key = (Math.Min(first.id, second.id), Math.Max(first.id, second.id));
-                    if (combinationRules.TryGetValue(key, out int resultId))
-                    {
-                        Debug.Log($"組合: {resultId} ");
-                        // 只創建一個新的特殊寶石效果
-                        first.id = resultId;
-                        //specialGemActivator.啟動特殊寶石(first); //刪掉後不影響耶！ 看來可以刪喔！
-                        // 不要呼叫 second 的效果，它會在觸發特殊寶石時一起被消除
-                        return true;
-                    }
-                }
-                else
-                {
-                    // 一般寶石和特殊寶石的組合
-                    Gem specialGem = firstIsSpecial ? first : second;
-                    Debug.Log($"特殊寶石組合: {specialGem.id} @ ({specialGem.x},{specialGem.y})"); //沒有耶
-                    specialGemActivator.啟動特殊寶石(specialGem);
+                    Debug.Log($"組合: {resultType} ");
+                    first.id = resultType;
                     return true;
                 }
-
                 return false;
             }
             catch (Exception e)
@@ -870,160 +819,7 @@ namespace Match3Game
 
         private List<List<Gem>> 尋找連續寶石組別(IGrouping<int, Gem> group)
         {
-            var result = new List<List<Gem>>();
-            var gems = group.ToList();
-
-            // 1. 找出所有水平連續組
-            var horizontalGroups = gems.GroupBy(g => g.y)
-                .Select(row =>
-                {
-                    var sortedRow = row.OrderBy(g => g.x).ToList();
-                    var continuousGroups = new List<List<Gem>>();
-                    var currentGroup = new List<Gem>();
-
-                    for (int i = 0; i < sortedRow.Count; i++)
-                    {
-                        if (currentGroup.Count == 0)
-                        {
-                            currentGroup.Add(sortedRow[i]);
-                        }
-                        else if (sortedRow[i].x == currentGroup.Last().x + 1)
-                        {
-                            currentGroup.Add(sortedRow[i]);
-                        }
-                        else
-                        {
-                            if (currentGroup.Count >= 3)
-                            {
-                                continuousGroups.Add(new List<Gem>(currentGroup));
-                            }
-                            currentGroup = new List<Gem> { sortedRow[i] };
-                        }
-                    }
-
-                    if (currentGroup.Count >= 3)
-                    {
-                        continuousGroups.Add(currentGroup);
-                    }
-
-                    return continuousGroups;
-                })
-                .SelectMany(g => g)
-                .ToList();
-
-            // 2. 找出所有垂直連續組
-            var verticalGroups = gems.GroupBy(g => g.x)
-                .Select(column =>
-                {
-                    var sortedColumn = column.OrderBy(g => g.y).ToList();
-                    var continuousGroups = new List<List<Gem>>();
-                    var currentGroup = new List<Gem>();
-
-                    for (int i = 0; i < sortedColumn.Count; i++)
-                    {
-                        if (currentGroup.Count == 0)
-                        {
-                            currentGroup.Add(sortedColumn[i]);
-                        }
-                        else if (sortedColumn[i].y == currentGroup.Last().y + 1)
-                        {
-                            currentGroup.Add(sortedColumn[i]);
-                        }
-                        else
-                        {
-                            if (currentGroup.Count >= 3)
-                            {
-                                continuousGroups.Add(new List<Gem>(currentGroup));
-                            }
-                            currentGroup = new List<Gem> { sortedColumn[i] };
-                        }
-                    }
-
-                    if (currentGroup.Count >= 3)
-                    {
-                        continuousGroups.Add(currentGroup);
-                    }
-
-                    return continuousGroups;
-                })
-                .SelectMany(g => g)
-                .ToList();
-
-            // 3. 檢測 T 型、L 型和 X 型匹配
-            foreach (var gem in gems)
-            {
-                // 檢查以當前寶石為中心的十字形
-                var crossGems = new List<Gem>();
-                var horizontalGems = gems.Where(g => g.y == gem.y).OrderBy(g => g.x).ToList();
-                var verticalGems = gems.Where(g => g.x == gem.x).OrderBy(g => g.y).ToList();
-
-                // 計算連續的水平和垂直寶石
-                var leftGems = horizontalGems.Where(g => g.x < gem.x && g.x >= gem.x - 2).ToList();
-                var rightGems = horizontalGems.Where(g => g.x > gem.x && g.x <= gem.x + 2).ToList();
-                var upGems = verticalGems.Where(g => g.y > gem.y && g.y <= gem.y + 2).ToList();
-                var downGems = verticalGems.Where(g => g.y < gem.y && g.y >= gem.y - 2).ToList();
-
-                // 檢查 T 型匹配
-                bool hasHorizontalMatch = (leftGems.Count + rightGems.Count) >= 2;
-                bool hasVerticalMatch = (upGems.Count + downGems.Count) >= 2;
-
-                if (hasHorizontalMatch && hasVerticalMatch)
-                {
-                    var specialGroup = new List<Gem> { gem };
-                    specialGroup.AddRange(leftGems);
-                    specialGroup.AddRange(rightGems);
-                    specialGroup.AddRange(upGems);
-                    specialGroup.AddRange(downGems);
-
-                    // 確認是否為有效的特殊形狀
-                    if (specialGroup.Count >= 5)
-                    {
-                        bool isTShape = (leftGems.Count >= 1 && rightGems.Count >= 1 && (upGems.Count >= 2 || downGems.Count >= 2)) ||
-                                       (upGems.Count >= 1 && downGems.Count >= 1 && (leftGems.Count >= 2 || rightGems.Count >= 2));
-
-                        bool isLShape = (leftGems.Count >= 2 && (upGems.Count >= 2 || downGems.Count >= 2)) ||
-                                       (rightGems.Count >= 2 && (upGems.Count >= 2 || downGems.Count >= 2));
-
-                        bool isXShape = (leftGems.Count >= 1 && rightGems.Count >= 1 && upGems.Count >= 1 && downGems.Count >= 1);
-
-                        if (isTShape || isLShape || isXShape)
-                        {
-                            if (!result.Any(g => g.Contains(gem)))
-                            {
-                                result.Add(specialGroup.Distinct().ToList());
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 將基本的水平和垂直組也加入結果中
-            result.AddRange(horizontalGroups);
-            result.AddRange(verticalGroups);
-
-            // 移除重複的組合
-            return result.Where(group => group.Count >= 4)
-                        .Distinct(new ListComparer<Gem>())
-                        .ToList();
-        }
-
-        // 用於比較兩個寶石列表是否相同的輔助類
-        private class ListComparer<T> : IEqualityComparer<List<T>>
-        {
-            public bool Equals(List<T> x, List<T> y)
-            {
-                return x.Count == y.Count && !x.Except(y).Any();
-            }
-
-            public int GetHashCode(List<T> obj)
-            {
-                int hash = 17;
-                foreach (var item in obj.OrderBy(x => x.GetHashCode()))
-                {
-                    hash = hash * 31 + item.GetHashCode();
-                }
-                return hash;
-            }
+            return MatchUtils.FindContinuousGemGroups(group);           
         }
         private IEnumerator 刪除寶石序列(List<Gem> matchedGems)
         {
@@ -1034,11 +830,11 @@ namespace Match3Game
             設置觸發點(matches, gem1, gem2);
 
             var matchGroups = matches.SelectMany(m => m.matchedGems)
-                .Where(gem => gem != null)
-                .GroupBy(gem => gem.id)
-                .SelectMany(group => 尋找連續寶石組別(group))
-                .Where(group => group.Count >= 4)
-                .ToList();
+                                                            .Where(gem => gem != null)
+                                                            .GroupBy(gem => gem.id)
+                                                            .SelectMany(group => MatchUtils.FindContinuousGemGroups(group))
+                                                            .Where(group => group.Count >= 4)
+                                                            .ToList();
             matchGroups = matchGroups.Distinct().ToList();
 
             // 先觸發要被消除的特殊寶石效果
@@ -1085,7 +881,7 @@ namespace Match3Game
                     var continuousGroups = 尋找連續寶石組別(group.GroupBy(g => g.id).First());
                     if (!continuousGroups.Any(g => g.Count >= 4)) continue;
 
-                    var (resourceType, isHorizontal, isVertical, _) = 確認要生成的特殊寶石(group);
+                    var (resourceType, isHorizontal, isVertical, _) = MatchUtils.確認特殊寶石類別(group);
                     if (resourceType != -1)
                     {
                         triggerX = playerTriggerX[i];
@@ -1122,7 +918,7 @@ namespace Match3Game
                     var continuousGroups = 尋找連續寶石組別(group.GroupBy(g => g.id).First());
                     if (!continuousGroups.Any(g => g.Count >= 4)) continue;
 
-                    var (resourceType, isHorizontal, isVertical, _) = 確認要生成的特殊寶石(group.ToList());
+                    var (resourceType, isHorizontal, isVertical, _) = MatchUtils.確認特殊寶石類別(group.ToList());
                     if (resourceType != -1)
                     {
                         // 從該組中隨機選擇一個位置作為特殊寶石的生成點
@@ -1196,118 +992,6 @@ namespace Match3Game
                 }
             }
         }
-
-        private (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems) 確認要生成的特殊寶石(List<Gem> gems)
-        {
-            //Debug.Log($"確認要生成的特殊寶石 - 匹配寶石數: {gems.Count} player：{byPlayer}");
-            //gems = gems.Distinct().ToList();  // 去除重複的寶石
-            if (gems.Count < 4) // 修改為最少需要4個寶石才能生成特殊寶石
-            {
-                return (-1, false, false, new List<Gem>());
-            }
-
-            // 檢查水平方向的連線
-            bool hasHorizontalLine = false;
-            var horizontalGroups = gems.GroupBy(g => g.y)
-                                      .ToDictionary(g => g.Key, g => g.ToList());
-
-            foreach (var group in horizontalGroups)
-            {
-                var sortedGems = group.Value.OrderBy(g => g.x).ToList();
-                int consecutiveCount = 1;
-
-                for (int i = 1; i < sortedGems.Count; i++)
-                {
-                    if (sortedGems[i].x == sortedGems[i - 1].x + 1)
-                    {
-                        consecutiveCount++;
-                        if (consecutiveCount >= 2) // 至少需要3個連續的
-                        {
-                            hasHorizontalLine = true;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        consecutiveCount = 1;
-                    }
-                }
-            }
-
-            // 檢查垂直方向的連線
-            bool hasVerticalLine = false;
-            var verticalGroups = gems.GroupBy(g => g.x)
-                                    .ToDictionary(g => g.Key, g => g.ToList());
-
-            foreach (var group in verticalGroups)
-            {
-                var sortedGems = group.Value.OrderBy(g => g.y).ToList();
-                int consecutiveCount = 1;
-
-                for (int i = 1; i < sortedGems.Count; i++)
-                {
-                    if (sortedGems[i].y == sortedGems[i - 1].y + 1)
-                    {
-                        consecutiveCount++;
-                        if (consecutiveCount >= 2) // 至少需要3個連續的
-                        {
-                            hasVerticalLine = true;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        consecutiveCount = 1;
-                    }
-                }
-            }
-
-            bool isCornerMatch = hasHorizontalLine && hasVerticalLine;
-
-            // 根據不同的匹配模式決定要生成的特殊寶石類型
-            int resourceType;
-            if (isCornerMatch)
-            {
-                if (gems.Count >= 6)
-                {
-                    //resourceType = 3; // Rainbow
-                    return (3, hasHorizontalLine, hasVerticalLine, gems);
-                }
-                else
-                {
-                    //resourceType = 2; // Bomb
-                    return (2, hasHorizontalLine, hasVerticalLine, gems);
-                }
-            }
-            else
-            {
-                if (gems.Count >= 5)
-                {
-                    resourceType = 3; // Rainbow
-                }
-                else if (hasVerticalLine)
-                {
-                    resourceType = 1; // 垂直清除線
-                }
-                else if (hasHorizontalLine)
-                {
-                    resourceType = 0; // 水平清除線
-                }
-                else
-                {
-                    resourceType = -1; // 不生成特殊寶石
-                }
-            }
-
-
-            // Debug 輸出，幫助確認生成邏輯
-            //Debug.Log($"數: {gems.Count}, 平: {hasHorizontalLine}, " +
-            //          $"直: {hasVerticalLine}, 角: {isCornerMatch}, " +
-            //          $"型: {resourceType} player：{byPlayer} isSwitching: {isSwitching}");
-
-            return (resourceType, hasHorizontalLine, hasVerticalLine, gems);
-        }
-
 
         // 創建特殊資源寶石的方法
         // 實際生成特殊寶石遊戲物件的邏輯
@@ -1501,7 +1185,7 @@ namespace Match3Game
                 // 為玩家提供清晰的當前遊戲階段提示
                 statusText.text = currentState switch
                 {
-                    GameState.Ready => "準備中：可以開始交換寶石",       // 遊戲就緒，玩家可以自由操作
+                    GameState.Ready => "可以開始交換寶石",       // 遊戲就緒，玩家可以自由操作
                     GameState.Swapping => "交換中：寶石正在移動",        // 正在執行寶石交換動畫
                     GameState.Processing => "處理中：消除匹配的寶石",     // 正在檢查和消除匹配的寶石
                     GameState.Filling => "填充中：補充新的寶石",         // 正在填充空白位置
@@ -1629,7 +1313,7 @@ namespace Match3Game
                         {
                             // 如果位置是有效的，直接登錄到 gems 陣列
                             gems[gemComponent.x, gemComponent.y] = gemComponent;
-                            Debug.Log($"已修復特殊寶石在位置 ({gemComponent.x},{gemComponent.y})");
+                            //Debug.Log($"已修復特殊寶石在位置 ({gemComponent.x},{gemComponent.y})");
                         }
                         else
                         {
