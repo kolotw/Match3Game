@@ -115,11 +115,11 @@ namespace Match3Game
             Board.instance.嘗試交換寶石一(x, y, targetPos.x, targetPos.y);
             yield return new WaitForSeconds(0.3f / Board.instance.gemMoveSpeed);
 
-            // 移動完後觸發效果
-            if (Board.instance != null && Board.instance.specialGemActivator != null)
-            {
-                Board.instance.specialGemActivator.啟動特殊寶石(this);
-            }
+            //// 移動完後觸發效果
+            //if (Board.instance != null && Board.instance.specialGemActivator != null)
+            //{
+            //    Board.instance.specialGemActivator.啟動特殊寶石(this);
+            //}
         }
 
         public IEnumerator AnimateMove(Vector3 target, float duration)

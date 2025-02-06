@@ -65,7 +65,7 @@ namespace Match3Game
         private GemFactory gemFactory;        // 寶石工廠
         private MatchFinder matchFinder;      // 匹配查找器
         public SpecialGemActivator specialGemActivator;  // 特殊寶石激活器
-        private BoardResetter boardResetter;  // 遊戲板重置器
+        
 
         // 遊戲常數：定義各種動畫和操作的持續時間
         public const float SWAP_DURATION = 0.05f;     // 寶石交換動畫持續時間
@@ -165,9 +165,6 @@ namespace Match3Game
             // 管理具有特殊能力的寶石的行為
             specialGemActivator = new SpecialGemActivator(this);
 
-            // 創建遊戲板重置器：管理遊戲板的重置邏輯
-            // 在需要時可以將遊戲板恢復到初始狀態
-            boardResetter = new BoardResetter(this);
         }
 
         // 初始化遊戲板的主要方法
@@ -1120,7 +1117,7 @@ namespace Match3Game
 
         // 淡出並銷毀指定的寶石列表的協程
         // 提供了一個安全、視覺上平滑的寶石消除機制
-        public IEnumerator 消失與刪除寶石(List<Gem> gemsToDestroy)
+        public IEnumerator 消失與刪除一般寶石(List<Gem> gemsToDestroy)
         {
             if (gemsToDestroy == null || gemsToDestroy.Count == 0)
             {

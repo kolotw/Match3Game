@@ -42,18 +42,11 @@ namespace Match3Game
 
             return isValidPosition;
         }
-        // 在 SpecialGemActivator.cs 中修改 觸發特殊寶石效果 方法
-
-        // 在 SpecialGemActivator.cs 中修改
 
         private IEnumerator 觸發特殊寶石效果(Gem gem)
         {
-            if (gem == null)
-            {
-                yield break;
-            }
+            if (gem == null) yield break;
 
-            // 等待交換動畫完成
             while (gem.isAnimating)
             {
                 yield return null;
@@ -62,37 +55,46 @@ namespace Match3Game
             board.hasMoveCompleted = false;
             board.matchPredictor?.StopTimer();
             int resType = gem.id - 100;
-            List<Gem> allDestroyedGems = new List<Gem>();
-            allDestroyedGems.Add(gem);
+            HashSet<Gem> processedGems = new HashSet<Gem> { gem };  // 追蹤已處理的寶石
+            List<Gem> allDestroyedGems = new List<Gem> { gem };
             board.statusText.text = "消除中";
 
             // 收集要被消除的寶石
             CollectGemsToDestroy(gem, resType, allDestroyedGems);
 
-            // 找出特殊寶石
+            // 找出特殊寶石並排序（確保處理順序一致）
             var specialGems = allDestroyedGems
-                .Where(g => g != null && g != gem && g.id >= 100)
+                .Where(g => g != null && g != gem && g.id >= 100 && !processedGems.Contains(g))
+                .OrderBy(g => g.id)
                 .ToList();
 
-            // 將特殊寶石從消除列表中移除
+            // 移除特殊寶石，加入已處理集合
             foreach (var specialGem in specialGems)
             {
                 allDestroyedGems.Remove(specialGem);
+                processedGems.Add(specialGem);
             }
 
-            // 立即執行普通寶石的消除
+            // 處理普通寶石
             if (allDestroyedGems.Count > 0)
             {
-                board.StartCoroutine(board.消失與刪除寶石(allDestroyedGems));
+                board.StartCoroutine(board.消失與刪除一般寶石(allDestroyedGems));
             }
 
-            // 立即觸發所有特殊寶石
+            // 依序處理特殊寶石
             foreach (var specialGem in specialGems)
             {
-                if (specialGem != null)
+                if (specialGem != null && board.gems[specialGem.x, specialGem.y] == specialGem)
                 {
-                    啟動特殊寶石(specialGem);
+                    // 直接執行效果，而不是重新呼叫 啟動特殊寶石
+                    CollectGemsToDestroy(specialGem, specialGem.id - 100, allDestroyedGems);
                 }
+            }
+
+            // 一次性處理所有收集到的寶石
+            if (allDestroyedGems.Count > 0)
+            {
+                board.StartCoroutine(board.消失與刪除一般寶石(allDestroyedGems));
             }
 
             yield return new WaitForSeconds(Board.DESTROY_DELAY);

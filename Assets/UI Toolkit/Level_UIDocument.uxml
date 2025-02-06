@@ -1,0 +1,7 @@
+<engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <engine:VisualElement name="VE0" style="flex-grow: 1;">
+        <engine:VisualElement name="VE_T" style="flex-grow: 1;" />
+        <engine:VisualElement name="VE_C_Board" style="flex-grow: 1;" />
+        <engine:VisualElement name="VE_Bottom" style="flex-grow: 1;" />
+    </engine:VisualElement>
+</engine:UXML>
