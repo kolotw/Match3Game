@@ -65,7 +65,7 @@ namespace Match3Game
         private GemFactory gemFactory;        // 寶石工廠
         private MatchFinder matchFinder;      // 匹配查找器
         public SpecialGemActivator specialGemActivator;  // 特殊寶石激活器
-        
+       
 
         // 遊戲常數：定義各種動畫和操作的持續時間
         public const float SWAP_DURATION = 0.05f;     // 寶石交換動畫持續時間
@@ -76,7 +76,7 @@ namespace Match3Game
         public const float FALL_DELAY = 0.03f;       // 寶石下落的延遲時間
         #endregion
 
-        
+
         #region 屬性
         // 遊戲狀態屬性
         // 提供對當前遊戲狀態的安全訪問和管理
@@ -164,7 +164,6 @@ namespace Match3Game
             // 創建特殊寶石激活器：處理特殊寶石的觸發效果
             // 管理具有特殊能力的寶石的行為
             specialGemActivator = new SpecialGemActivator(this);
-
         }
 
         // 初始化遊戲板的主要方法
@@ -349,7 +348,7 @@ namespace Match3Game
 
                 bool hasValidMatch = false;
                 bool hasSpecialGem = swappedGem1?.id >= 100 || swappedGem2?.id >= 100;
-                                
+
 
                 // 玩家操作時的處理順序
                 if (由玩家觸發生成)
@@ -359,16 +358,22 @@ namespace Match3Game
                     Gem normalGem = swappedGem1?.id >= 100 ? swappedGem2 : swappedGem1;
 
                     // 如果是兩個特殊寶石的組合
+                    // 如果是兩個特殊寶石的組合
                     if (swappedGem1?.id >= 100 && swappedGem2?.id >= 100)
                     {
+                        var (success, resultType) = MatchUtils.CheckSpecialGemCombination(swappedGem1, swappedGem2);
+                        if (success)
+                        {
+                            // 把組合效果賦予給其中一個寶石
+                            swappedGem1.id = resultType;
 
-                        //生成特殊寶石(triggerX, triggerY, combinedResType - 100);
-                        處理特殊寶石的組合(swappedGem1, swappedGem2);
+                            // 先觸發組合後的特殊效果
+                            specialGemActivator.啟動特殊寶石(swappedGem1);
 
-                        // 移除原本的兩個特殊寶石
-                        StartCoroutine(淡出與刪除寶石(new HashSet<Gem> { swappedGem1, swappedGem2 }, processedGemIds));
-                        hasValidMatch = true;
-
+                            // 再移除這兩個特殊寶石
+                            StartCoroutine(淡出與刪除寶石(new HashSet<Gem> { swappedGem1, swappedGem2 }, processedGemIds));
+                            hasValidMatch = true;
+                        }
                     }
                     // 特殊寶石與普通寶石的交換
                     else if (hasSpecialGem && normalGem?.id < 100)
@@ -450,7 +455,7 @@ namespace Match3Game
                             StartCoroutine(處理配對序列());
                         }
                     }
-                    
+
                     else
                     {
                         // 純普通寶石交換的處理
@@ -816,7 +821,7 @@ namespace Match3Game
 
         private List<List<Gem>> 尋找連續寶石組別(IGrouping<int, Gem> group)
         {
-            return MatchUtils.FindContinuousGemGroups(group);           
+            return MatchUtils.FindContinuousGemGroups(group);
         }
         private IEnumerator 刪除寶石序列(List<Gem> matchedGems)
         {
@@ -926,7 +931,7 @@ namespace Match3Game
                             var selectedGem = validGems[randomIndex];
                             triggerX = selectedGem.x;
                             triggerY = selectedGem.y;
-                            
+
                             Debug.Log($"非玩家操作時 - 隨機位置({triggerX},{triggerY})生成 Type:{resourceType} count:{group.Count}");
 
                             if (IsValidPosition(triggerX, triggerY))
@@ -1160,6 +1165,11 @@ namespace Match3Game
             {
                 if (gem != null && gem.gameObject != null)
                 {
+                    //這邊會刪除兩次…
+                    if (gem.id == 103)
+                    {
+                        GameObject.Find("/00GameMaster").GetComponent<GameManaager>().UpdateTarget();
+                    }
                     Destroy(gem.gameObject);
                 }
             }
