@@ -14,10 +14,11 @@ namespace Match3Game
         private const float HINT_DELAY = 3f;
         private bool isMouseDown = false;
         private bool isResetting = false;
-
+        public SpecialGemActivator specialGemActivator;  // 特殊寶石激活器
         void Start()
         {
             board = Board.instance;
+            specialGemActivator = new SpecialGemActivator(board);
             highlightPrefab = Resources.Load<GameObject>("Highlight");
         }
 
@@ -98,7 +99,8 @@ namespace Match3Game
                 }
             }
 
-            yield return StartCoroutine(board.消失與刪除一般寶石(allGems));
+            specialGemActivator.收集要被消除的寶石(new HashSet<Gem>(allGems));
+
 
             // 重新填滿棋盤
             yield return StartCoroutine(board.填滿空位六(-1));

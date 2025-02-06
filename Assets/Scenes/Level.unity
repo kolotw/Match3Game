@@ -283,13 +283,13 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 40688172}
-  m_LocalRotation: {x: -0, y: -0, z: 0.13872248, w: 0.99033135}
+  m_LocalRotation: {x: -0, y: -0, z: 0.058795292, w: 0.9982701}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 15.948}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 6.741}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 2.04, y: 4.0083}
@@ -655,7 +655,6 @@ MonoBehaviour:
   - {fileID: 4090921886298273075, guid: 150603f6d8256ed4e8ed041e6afc5f33, type: 3}
   - {fileID: 2038196581494960673, guid: 42db343d095a7bc449566dcca1c7297b, type: 3}
   - {fileID: 3509592728334798258, guid: f9115b9e66f8c6049aa4e16b511ac695, type: 3}
-  - {fileID: 6396109961415817149, guid: 5d550a3750f0e334b94f52e8b95d22d1, type: 3}
   resGemPrefabs:
   - {fileID: 8466207186695394168, guid: 5c7624df17977be45924a5c9ad1e81d0, type: 3}
   - {fileID: 4334207860041640017, guid: b6895930c7df7114d9cfef85c4261c74, type: 3}
@@ -2120,7 +2119,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1065302662
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4034,7 +4033,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1922030861
 MonoBehaviour:
   m_ObjectHideFlags: 0

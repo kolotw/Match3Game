@@ -294,33 +294,10 @@ namespace Match3Game
                 : (false, -1);
         }
 
-        // »²§U¤èªk
-        private static bool HasConsecutiveLine(List<Gem> gems, bool isHorizontal)
-        {
-            return gems.GroupBy(g => isHorizontal ? g.y : g.x)
-                      .Any(group => HasConsecutiveGems(group.OrderBy(g => isHorizontal ? g.x : g.y).ToList()));
-        }
-
-        private static bool HasConsecutiveGems(List<Gem> sortedGems)
-        {
-            return sortedGems.Count >= 3 && sortedGems.Skip(1)
-                                                     .Zip(sortedGems, (curr, prev) => curr.x == prev.x + 1)
-                                                     .Count(consecutive => consecutive) >= 2;
-        }
-
         private static bool IsTLShape(List<Gem> horizontal, List<Gem> vertical)
         {
             return (horizontal.Count >= 3 && vertical.Count >= 3) &&
                    (horizontal.Count >= 2 || vertical.Count >= 2);
-        }
-
-        private static int DetermineResourceType(int count, bool isCorner, bool isVertical, bool isHorizontal)
-        {
-            if (isCorner) return count >= 6 ? 3 : 2;
-            if (count >= 5) return 3;
-            if (isVertical) return 1;
-            if (isHorizontal) return 0;
-            return -1;
         }
 
         private class ListComparer<T> : IEqualityComparer<List<T>>
