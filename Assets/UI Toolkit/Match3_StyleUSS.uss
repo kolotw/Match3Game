@@ -1,0 +1,17 @@
+.buttonAnim {
+    flex-grow: 1;
+    flex-direction: row;
+    flex-shrink: 0;
+    rotate: 0;
+    transition-property: rotate;
+    transition-duration: 0.5s;
+}
+
+.buttonAnim:hover {
+    rotate: -5deg;
+    transition-property: rotate, scale;
+    transition-duration: 0.3s, 0.3s;
+    transition-delay: 0.01s, 0s;
+    transition-timing-function: ease-in, ease-in-sine;
+    scale: 1.2 1.2;
+}
