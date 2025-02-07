@@ -73,7 +73,7 @@ namespace Match3Game
         public const float FADE_DELAY = 0.3f;        // 淡出延遲（大幅縮短）
         public const float COLLECT_DELAY = 0.3f;     // 收集寶石的延遲時間
         public const float COMPLETE_DELAY = 0.1f;    // 完成操作的延遲時間（稍微加長）
-        public const float FALL_DELAY = 0.1f;        // 寶石下落的延遲時間（與消除同步）
+        public const float FALL_DELAY = 0.01f;        // 寶石下落的延遲時間（與消除同步）
         public const float SPECIAL_EFFECT_DELAY = 0.5f;  // 新增：特殊寶石效果延遲
 
         #endregion
@@ -314,6 +314,7 @@ namespace Match3Game
                     gems[x2, y2].y = y2;
                 }
             }
+            CurrentState = GameState.Ready;
         }
         #endregion
         #region 協程方法
@@ -994,7 +995,7 @@ namespace Match3Game
             // 只有在沒有其他處理中的操作時才切換狀態
             if (CurrentState == GameState.Processing)
             {
-                CurrentState = GameState.Ready;
+                CurrentState = GameState.Ready;                
                 matchPredictor?.ResetPredictionTimer();
             }
         }
@@ -1027,20 +1028,21 @@ namespace Match3Game
         {
             return MatchUtils.FindContinuousGemGroups(group);
         }
+        // 修改 刪除寶石序列 中的特殊寶石生成邏輯
         private IEnumerator 刪除寶石序列(List<Gem> matchedGems)
         {
             var processedGems = new HashSet<Gem>();
             var matches = matchFinder.FindAllMatches();
-            var processedGemIds = new HashSet<int>();  // 移到外部，讓玩家和非玩家操作都能使用
+            var processedGemIds = new HashSet<int>();
 
             設置觸發點(matches, gem1, gem2);
 
             var matchGroups = matches.SelectMany(m => m.matchedGems)
-                                                            .Where(gem => gem != null)
-                                                            .GroupBy(gem => gem.id)
-                                                            .SelectMany(group => MatchUtils.FindContinuousGemGroups(group))
-                                                            .Where(group => group.Count >= 4)
-                                                            .ToList();
+                                    .Where(gem => gem != null)
+                                    .GroupBy(gem => gem.id)
+                                    .SelectMany(group => MatchUtils.FindContinuousGemGroups(group))
+                                    .Where(group => group.Count >= 4)
+                                    .ToList();
             matchGroups = matchGroups.Distinct().ToList();
 
             // 先觸發要被消除的特殊寶石效果
@@ -1048,7 +1050,7 @@ namespace Match3Game
                 g != null &&
                 g.id >= 100 &&
                 gems[g.x, g.y] == g &&
-                !processedGemIds.Contains(g.GetInstanceID())).ToList();  // 排除已處理的寶石
+                !processedGemIds.Contains(g.GetInstanceID())).ToList();
 
             foreach (var gem in specialGems)
             {
@@ -1056,7 +1058,7 @@ namespace Match3Game
                 yield return new WaitForSeconds(DESTROY_DELAY);
             }
 
-            // 清除匹配的普通寶石時，同時從安全陣列移除
+            // 清除匹配的普通寶石，並標記要處理的群組
             foreach (var gem in matchedGems.Where(g =>
                 g != null &&
                 g.id < 100 &&
@@ -1065,12 +1067,27 @@ namespace Match3Game
             {
                 processedGems.Add(gem);
                 gems[gem.x, gem.y] = null;
-                processedGemIds.Remove(gem.GetInstanceID());  // 從安全陣列移除
+                processedGemIds.Remove(gem.GetInstanceID());
             }
-                       
 
+            // 玩家觸發的特殊寶石檢查和生成
             if (由玩家觸發生成)
             {
+                // 檢查是否為特殊寶石組合
+                if (gem1?.id >= 100 && gem2?.id >= 100)
+                {
+                    int originalId1 = gem1.id;
+                    var (success, resultType) = MatchUtils.CheckSpecialGemCombination(gem1, gem2);
+                    if (success)
+                    {
+                        gem1.id = resultType;
+                        specialGemActivator.啟動特殊寶石(gem1);
+                        gem1.id = originalId1;
+                        由玩家觸發生成 = false;
+                        yield break;
+                    }
+                }
+
                 // 使用已經設置好的玩家觸發點來生成特殊寶石
                 for (int i = 0; i < matchGroups.Count && i < playerTriggerX.Length; i++)
                 {
@@ -1078,21 +1095,20 @@ namespace Match3Game
                         .Where(g => !processedGemIds.Contains(g.GetInstanceID()))
                         .ToList();
 
-                    if (group.Count < 4) continue;  // 如果過濾後數量不夠就跳過
+                    if (group.Count < 4) continue;
 
-                    // 使用已有的 尋找連續寶石組別 檢查連續性
-                    var continuousGroups = 尋找連續寶石組別(group.GroupBy(g => g.id).First());
-                    if (!continuousGroups.Any(g => g.Count >= 4)) continue;
+                    // 使用 MatchUtils.確認特殊寶石類別 來判斷是否可以生成特殊寶石
+                    Debug.Log($"確認特殊寶石類別 觸發點XY: ({playerTriggerX[i]}, {playerTriggerY[i]})");
+                    var (resourceType, isHorizontal, isVertical, _) = MatchUtils.確認特殊寶石類別(group, playerTriggerX[i], playerTriggerY[i]);
 
-                    var (resourceType, isHorizontal, isVertical, _) = MatchUtils.確認特殊寶石類別(group);
                     if (resourceType != -1)
                     {
                         triggerX = playerTriggerX[i];
                         triggerY = playerTriggerY[i];
                         if (IsValidPosition(triggerX, triggerY))
-                        {
-                            Debug.Log($"生成特殊寶石 create byPlayer: ,({triggerX}, {triggerY}),Res: {resourceType} count: {group.Count}");
+                        {                            
                             var newGem = 生成特殊寶石(triggerX, triggerY, resourceType);
+                            Debug.Log($"生成特殊寶石 create byPlayer: ({triggerX}, {triggerY}),Res: {resourceType} count: {group.Count}");
                             if (newGem != null)
                             {
                                 processedGemIds.Add(newGem.GetInstanceID());
@@ -1109,22 +1125,18 @@ namespace Match3Game
             }
             else
             {
-                //設置觸發點(matches, gem1, gem2);
+                // 非玩家操作的特殊寶石生成
                 foreach (var group in matchGroups)
                 {
                     if (group.Any(g => processedGemIds.Contains(g.GetInstanceID())))
                     {
-                        continue;  // 如果組中有任何已處理的寶石就跳過
+                        continue;
                     }
 
-                    // 檢查連續性
-                    var continuousGroups = 尋找連續寶石組別(group.GroupBy(g => g.id).First());
-                    if (!continuousGroups.Any(g => g.Count >= 4)) continue;
-
                     var (resourceType, isHorizontal, isVertical, _) = MatchUtils.確認特殊寶石類別(group.ToList());
+
                     if (resourceType != -1)
                     {
-                        // 從該組中隨機選擇一個位置作為特殊寶石的生成點
                         var validGems = group.Where(g => !processedGemIds.Contains(g.GetInstanceID())).ToList();
                         if (validGems.Any())
                         {
@@ -1151,12 +1163,10 @@ namespace Match3Game
                     }
                 }
             }
-            
-            yield return StartCoroutine(淡出與刪除寶石(processedGems, processedGemIds));  // 傳入安全陣列
+
+            yield return StartCoroutine(淡出與刪除寶石(processedGems, processedGemIds));
             yield return new WaitForSeconds(DESTROY_DELAY);
-
             yield return StartCoroutine(落下寶石五());
-
         }
 
         // 寶石淡出效果的協程
@@ -1288,29 +1298,9 @@ namespace Match3Game
 
             // 定期清理遊戲板
             // 每300幀執行一次清理操作，優化遊戲性能和資源管理
-            if (Time.frameCount % 100 == 0)
+            if (Time.frameCount % 30 == 0)
             {
                 CleanupBoard();
-            }
-        }
-
-        // 清理遊戲資源的方法
-        // 在遊戲結束或場景切換時釋放佔用的遊戲資源
-        private void CleanupResources()
-        {
-            // 立即停止所有正在運行的協程
-            // 防止殘留的協程繼續執行，造成不可預期的行為
-            StopAllCoroutines();
-
-            // 遍歷並銷毀遊戲板上的所有子物件
-            // 確保徹底清理遊戲場景，釋放記憶體
-            foreach (Transform child in transform)
-            {
-                if (child != null)
-                {
-                    // 完全銷毀遊戲物件，釋放佔用的資源
-                    Destroy(child.gameObject);
-                }
             }
         }
 

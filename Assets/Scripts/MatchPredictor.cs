@@ -81,7 +81,7 @@ namespace Match3Game
             ClearHighlights();
         }
 
-        private IEnumerator ResetBoard()
+        public IEnumerator ResetBoard()
         {
             isResetting = true;
 

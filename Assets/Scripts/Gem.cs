@@ -76,6 +76,9 @@ namespace Match3Game
                     Board.instance.specialGemActivator.啟動特殊寶石(this);
                 }
             }
+
+            GameObject.Find("/00GameMaster").GetComponent<GameManaager>().updateRound();
+
         }
 
         private void TrySwap(Vector2Int targetPos)

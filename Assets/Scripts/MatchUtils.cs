@@ -187,7 +187,9 @@ namespace Match3Game
         // 確定特殊寶石類型
         // 在 MatchUtils.cs 中添加更詳細的檢查
         public static (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems)
-            確認特殊寶石類別(List<Gem> gems)
+            確認特殊寶石類別(List<Gem> gems,
+            int triggerX = 0, int triggerY = 0
+            )
         {
             if (gems == null || gems.Count < 4)
             {
