@@ -73,7 +73,7 @@ namespace Match3Game
         public const float FADE_DELAY = 0.3f;        // 淡出延遲（大幅縮短）
         public const float COLLECT_DELAY = 0.3f;     // 收集寶石的延遲時間
         public const float COMPLETE_DELAY = 0.1f;    // 完成操作的延遲時間（稍微加長）
-        public const float FALL_DELAY = 0.01f;        // 寶石下落的延遲時間（與消除同步）
+        public const float FALL_DELAY = 0.05f;        // 寶石下落的延遲時間（與消除同步）
         public const float SPECIAL_EFFECT_DELAY = 0.5f;  // 新增：特殊寶石效果延遲
 
         #endregion
