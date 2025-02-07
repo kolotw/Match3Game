@@ -70,7 +70,7 @@ namespace Match3Game
         // 遊戲常數：定義各種動畫和操作的持續時間
         public const float SWAP_DURATION = 0.2f;     // 寶石交換動畫持續時間
         public const float DESTROY_DELAY = 0.3f;     // 寶石消除的延遲時間（改短一點）
-        public const float FADE_DELAY = 0.5f;        // 淡出延遲（大幅縮短）
+        public const float FADE_DELAY = 0.3f;        // 淡出延遲（大幅縮短）
         public const float COLLECT_DELAY = 0.3f;     // 收集寶石的延遲時間
         public const float COMPLETE_DELAY = 0.1f;    // 完成操作的延遲時間（稍微加長）
         public const float FALL_DELAY = 0.1f;        // 寶石下落的延遲時間（與消除同步）
@@ -145,9 +145,66 @@ namespace Match3Game
         // 用於進行必要的資源清理工作
         private void OnDestroy()
         {
-            // 清理遊戲資源
-            // 停止所有協程，銷毀遊戲物件
-            CleanupResources();
+            try
+            {
+                // 停止所有正在運行的協程
+                StopAllCoroutines();
+
+                // 遍歷並銷毀遊戲板上的所有子物件
+                foreach (Transform child in transform)
+                {
+                    if (child != null)
+                    {
+                        Destroy(child.gameObject);
+                    }
+                }
+
+                // 清空遊戲板陣列
+                if (gems != null)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        for (int y = 0; y < height; y++)
+                        {
+                            gems[x, y] = null;
+                        }
+                    }
+                    gems = null;
+                }
+
+                // 重置遊戲狀態
+                CurrentState = GameState.Ready;
+                hasMoveCompleted = true;
+
+                // 重置特殊寶石相關
+                if (specialGemActivator != null)
+                {
+                    specialGemActivator.重置狀態();
+                }
+
+                // 重置配對
+                gem1 = null;
+                gem2 = null;
+
+                // 重置預測器狀態
+                if (matchPredictor != null)
+                {
+                    matchPredictor.StopTimer();
+                }
+
+                // 重置狀態文字
+                if (statusText != null)
+                {
+                    statusText.text = "遊戲已停止";
+                }
+
+                // 重置由玩家觸發的標記
+                由玩家觸發生成 = false;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"OnDestroy清理時發生錯誤: {e.Message}\n{e.StackTrace}");
+            }
         }
         #endregion
         #region 初始化方法
@@ -328,16 +385,12 @@ namespace Match3Game
             gem1.isAnimating = false;
             gem2.isAnimating = false;
             isSwitching = false;
-            CurrentState = GameState.Ready;
+            //CurrentState = GameState.Ready;
             matchPredictor?.ResetPredictionTimer();
         }
         private IEnumerator 處理配對序列()
         {
-            // 如果特殊寶石效果正在處理中，等待其完成
-            while (specialGemActivator.isProcessingEffect)
-            {
-                yield return null;
-            }
+            CurrentState = GameState.Processing;
 
             // 等待一段短暫的延遲，增加視覺效果
             yield return new WaitForSeconds(DESTROY_DELAY);
@@ -348,16 +401,57 @@ namespace Match3Game
             // 再次等待
             yield return new WaitForSeconds(DESTROY_DELAY);
 
-            // 如果沒有特殊寶石效果在處理，才開始落下
-            if (!specialGemActivator.isProcessingEffect)
+            // 等待特殊寶石效果完成
+            while (specialGemActivator.isProcessingEffect)
             {
-                yield return StartCoroutine(落下寶石五());
+                yield return null;
+            }
+
+            yield return StartCoroutine(落下寶石五());
+
+            // 處理可能的連鎖反應
+            yield return StartCoroutine(處理連鎖反應());
+
+            // 確保所有動畫都完成
+            bool allAnimationsComplete;
+            do
+            {
+                allAnimationsComplete = true;
+                for (int x = 0; x < width; x++)
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        if (gems[x, y] != null && gems[x, y].isAnimating)
+                        {
+                            allAnimationsComplete = false;
+                            break;
+                        }
+                    }
+                }
+                if (!allAnimationsComplete)
+                {
+                    yield return new WaitForSeconds(0.1f);
+                }
+            } while (!allAnimationsComplete);
+
+            // 確保沒有新的連鎖反應
+            if (偵測可消除的寶石組合())
+            {
+                yield return StartCoroutine(處理配對序列());
+                yield break;
+            }
+
+            // 所有效果和連鎖反應都完成後，才設為 Ready
+            if (CurrentState == GameState.Processing)
+            {
+                CurrentState = GameState.Ready;
+                matchPredictor?.ResetPredictionTimer();
             }
         }
         private void 交換寶石後再檢查四()
         {
             try
-            {
+            {                
                 var swappedGem1 = gem1;
                 var swappedGem2 = gem2;
                 var processedGemIds = new HashSet<int>();
@@ -369,6 +463,8 @@ namespace Match3Game
                     StartCoroutine(落下寶石五());
                     return;
                 }
+
+                CurrentState = GameState.Processing;
 
                 bool hasValidMatch = false;
                 bool hasSpecialGem = swappedGem1?.id >= 100 || swappedGem2?.id >= 100;
@@ -483,7 +579,7 @@ namespace Match3Game
                 }
                 else
                 {
-                    // 非玩家操作的處理保持不變
+                    // 非玩家操作的處理
                     var matches = matchFinder.FindAllMatches();
                     if (matches.Count > 0)
                     {
@@ -782,25 +878,6 @@ namespace Match3Game
             }
         }
 
-        private bool 處理特殊寶石的組合(Gem first, Gem second)
-        {
-            try
-            {
-                var (success, resultType) = MatchUtils.CheckSpecialGemCombination(first, second);
-                if (success)
-                {
-                    Debug.Log($"組合: {resultType} ");
-                    first.id = resultType;
-                    return true;
-                }
-                return false;
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"ProcessSpecialGems error: {e.Message}");
-                return false;
-            }
-        }
 
         // 檢查遊戲板上是否存在寶石匹配
         // 這是遊戲核心邏輯的關鍵方法，用於偵測可消除的寶石組合
@@ -865,33 +942,64 @@ namespace Match3Game
         // 檢測並處理填充後可能出現的連續匹配
         private IEnumerator 處理連鎖反應()
         {
-            // 短暫等待，確保視覺效果的流暢性
+            // 確保在處理連鎖反應時維持 Processing 狀態
+            CurrentState = GameState.Processing;
+
             yield return new WaitForSeconds(0.1f);
 
-            // 持續檢查是否存在匹配
-            while (偵測可消除的寶石組合())
+            bool hasChainReaction = false;
+            do
             {
-                // 等待消除延遲
-                yield return new WaitForSeconds(DESTROY_DELAY);
+                hasChainReaction = false;
 
-                // 銷毀匹配的寶石（非互動觸發）
-                刪除寶石();
+                if (偵測可消除的寶石組合())
+                {
+                    hasChainReaction = true;
+                    yield return new WaitForSeconds(DESTROY_DELAY);
+                    刪除寶石();
+                    yield return new WaitForSeconds(DESTROY_DELAY);
 
-                // 再次等待，控制消除的節奏
-                yield return new WaitForSeconds(DESTROY_DELAY);
+                    // 等待所有寶石的動畫完成
+                    bool animationsCompleted;
+                    do
+                    {
+                        animationsCompleted = true;
+                        for (int x = 0; x < width; x++)
+                        {
+                            for (int y = 0; y < height; y++)
+                            {
+                                if (gems[x, y] != null && gems[x, y].isAnimating)
+                                {
+                                    animationsCompleted = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!animationsCompleted)
+                        {
+                            yield return new WaitForSeconds(0.1f);
+                        }
+                    } while (!animationsCompleted);
+                }
+
+            } while (hasChainReaction);
+
+            // 確認特殊寶石效果也完成
+            while (specialGemActivator.isProcessingEffect)
+            {
+                yield return null;
             }
 
-            // 如果當前狀態不是處理中，則將遊戲狀態重置為就緒
-            if (CurrentState != GameState.Processing)
+            // 所有效果和動畫都完成後，檢查是否可以切換到 Ready 狀態
+            // 只有在沒有其他處理中的操作時才切換狀態
+            if (CurrentState == GameState.Processing)
             {
                 CurrentState = GameState.Ready;
-
-                // 重置匹配預測計時器
                 matchPredictor?.ResetPredictionTimer();
             }
         }
 
-       
+
         // 填充遊戲板空白位置的協程
         // 負責在消除寶石後重新填滿遊戲板的空白格子
 
@@ -900,6 +1008,7 @@ namespace Match3Game
         // 啟動消除匹配寶石的整體流程
         private void 刪除寶石()
         {
+            statusText.text = "消除中";
             // 使用匹配查找器尋找所有可消除的寶石組
             var matches = matchFinder.FindAllMatches();
 
@@ -958,9 +1067,7 @@ namespace Match3Game
                 gems[gem.x, gem.y] = null;
                 processedGemIds.Remove(gem.GetInstanceID());  // 從安全陣列移除
             }
-
-            // 在淡出與刪除寶石方法中也要處理
-            
+                       
 
             if (由玩家觸發生成)
             {

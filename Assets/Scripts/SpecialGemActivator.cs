@@ -43,7 +43,7 @@ namespace Match3Game
                 isProcessingEffect = false;
                 yield break;
             }
-
+            Debug.Log($"觸發特殊寶石效果 : {gem.id} ({gem.x}, {gem.y})");
             // 等待交換動畫完成
             while (gem.isAnimating)
             {
@@ -314,9 +314,12 @@ namespace Match3Game
         {
             // 執行淡出動畫
             float alpha = 1f;
-            while (alpha > 0)
+            float elapsed = 0f;
+            while (elapsed < Board.FADE_DELAY)
             {
-                alpha -= Board.FADE_DELAY * 0.025f;
+                elapsed += Time.deltaTime;
+                alpha = 1 - (elapsed / Board.FADE_DELAY);
+
                 foreach (var gem in gemsToDestroy)
                 {
                     if (gem != null && gem.gameObject != null)
@@ -331,22 +334,29 @@ namespace Match3Game
                 yield return null;
             }
 
-            foreach (var gem in gemsToDestroy)
+            // 找出並啟動特殊寶石效果
+            var specialGems = gemsToDestroy.Where(gem => gem != null && gem.id >= 100).ToList();
+            foreach (var gem in specialGems)
             {
-                if (gem.id == 103)
-                { 
-                    Debug.Log($"刪特殊★ID:{gem.id} ({gem.x}, {gem.y})");
-                    GameObject.Find("/00GameMaster").GetComponent<GameManaager>().UpdateTarget();
-                }
-                //else
-                //{ Debug.Log($"刪一般 ID:{gem.id} ({gem.x}, {gem.y})"); }
+                啟動特殊寶石(gem);
             }
-            // 銷毀所有寶石
+
+            // 刪除所有寶石
             foreach (var gem in gemsToDestroy)
             {
-                if (gem != null && gem.gameObject != null)
-                {                    
-                    Object.Destroy(gem.gameObject);
+                if (gem != null)
+                {
+                    // 關卡目標 
+                    if (gem.id == 103)
+                    {
+                        Debug.Log($"刪特殊★ID:{gem.id} ({gem.x}, {gem.y})");
+                        GameObject.Find("/00GameMaster").GetComponent<GameManaager>().UpdateTarget();
+                    }
+
+                    if (gem.gameObject != null)
+                    {
+                        Object.Destroy(gem.gameObject);
+                    }
                 }
             }
 
@@ -355,6 +365,24 @@ namespace Match3Game
 
             // 觸發寶石下落
             yield return board.StartCoroutine(board.落下寶石五());
+        }
+        public void 重置狀態()
+        {
+            try
+            {
+                // 清空待銷毀寶石集合
+                if (gemsToDestroy != null)
+                {
+                    gemsToDestroy.Clear();
+                }
+
+                // 重置處理狀態
+                isProcessingEffect = false;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"SpecialGemActivator重置時發生錯誤: {e.Message}");
+            }
         }
 
     }
