@@ -77,12 +77,12 @@ namespace Match3Game
         public const float FADE_DELAY = 0.15f;        // 淡出效果稍微慢一點以便看清
 
         // 完成動作 - 稍慢
-        public const float COMPLETE_DELAY = 0.2f;    // 動作完成的等待時間
-        public const float COLLECT_DELAY = 0.25f;      // 收集寶石稍微放慢以強調效果
-        public const float WAIT_FOR_DISPEAR = 0.3f;    // 等待消失的時間
+        public const float COMPLETE_DELAY = 0.3f;    // 動作完成的等待時間
+        public const float COLLECT_DELAY = 0.35f;      // 收集寶石稍微放慢以強調效果
+        public const float WAIT_FOR_DISPEAR = 0.4f;    // 等待消失的時間
 
         // 特殊效果 - 最慢
-        public const float SPECIAL_EFFECT_DELAY = 0.3f; // 特殊效果放慢以突出表現
+        public const float SPECIAL_EFFECT_DELAY = 0.5f; // 特殊效果放慢以突出表現
 
         #endregion
 
@@ -683,8 +683,7 @@ namespace Match3Game
                         // 只有當下方寶石都就位時才生成新寶石
                         if (lowerGemsSettled)
                         {
-                            int dropDelay = 0;
-                            生成與掉落寶石七(x, y, ref dropDelay);
+                            生成與掉落寶石七(x, y);
                             // 等待這個寶石的動畫完成
                             yield return new WaitForSeconds(FALL_DELAY);
                         }
@@ -723,7 +722,8 @@ namespace Match3Game
             yield return 處理連鎖反應();
         }
 
-        private void 生成與掉落寶石七(int x, int y, ref int dropDelay)
+        // 移除 dropDelay 參數
+        private void 生成與掉落寶石七(int x, int y)
         {
             // 使用寶石工廠創建新寶石
             gemFactory.CreateGem(x, y);
@@ -737,7 +737,7 @@ namespace Match3Game
                 FALL_DELAY * 2         // 動畫時間
             ));
         }
-        
+
 
         // 新增一個輔助方法來設置觸發點 triggerX, triggerY
         // 修改 設置觸發點 方法
@@ -1037,7 +1037,7 @@ namespace Match3Game
         {
             return MatchUtils.FindContinuousGemGroups(group);
         }
-        // 修改 刪除寶石序列 中的特殊寶石生成邏輯
+
         public IEnumerator 刪除寶石序列(List<Gem> matchedGems)
         {
             var processedGems = new HashSet<Gem>();
@@ -1234,30 +1234,6 @@ namespace Match3Game
             // 快速獲取匹配的寶石數量的屬性
             // 提供了一種便捷的方式來確定匹配的規模
             public int matchCount => matchedGems.Count;
-        }
-
-        // 淡出並銷毀指定的寶石列表的協程
-        // 提供了一個安全、視覺上平滑的寶石消除機制
-        public IEnumerator 消失與刪除一般寶石(List<Gem> gemsToDestroy)
-        {
-            if (gemsToDestroy == null || gemsToDestroy.Count == 0)
-            {
-                yield break;
-            }
-
-            var safeGems = gemsToDestroy.Where(gem => gem != null && gem.gameObject != null).ToList();
-            if (safeGems.Count == 0) yield break;
-
-            // 從遊戲板中移除寶石
-            foreach (var gem in safeGems)
-            {
-                if (gem != null && IsValidPosition(gem.x, gem.y))
-                {
-                    gems[gem.x, gem.y] = null;
-                }
-            }
-            specialGemActivator.收集要被消除的寶石(new HashSet<Gem>(safeGems));
-
         }
 
         // 更新遊戲狀態文字的方法

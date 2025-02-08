@@ -43,7 +43,7 @@ namespace Match3Game
                 isProcessingEffect = false;
                 yield break;
             }
-            //Debug.Log($"觸發特殊寶石效果 : {gem.id} ({gem.x}, {gem.y})");
+
             // 等待交換動畫完成
             while (gem.isAnimating)
             {
@@ -68,18 +68,6 @@ namespace Match3Game
                 .Where(g => g != null && g != gem && g.id >= 100)
                 .ToList();
 
-            // 將特殊寶石從消除列表中移除
-            foreach (var specialGem in specialGems)
-            {
-                allDestroyedGems.Remove(specialGem);
-            }
-
-            // 消除一般寶石
-            if (allDestroyedGems.Count > 0)
-            {
-                yield return board.StartCoroutine(board.消失與刪除一般寶石(allDestroyedGems));
-            }
-
             // 等待一小段時間確保所有效果完成
             yield return new WaitForSeconds(Board.DESTROY_DELAY);
 
@@ -99,9 +87,8 @@ namespace Match3Game
                 }
             }
 
-            // 所有效果都完成後，通知Board可以開始落下填充
+            // 所有效果都完成後
             isProcessingEffect = false;
-            //board.StartCoroutine(board.落下寶石五());
         }
         private bool ValidateGemPosition(Gem gem, int x, int y)
         {
