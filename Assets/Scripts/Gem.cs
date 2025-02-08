@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace Match3Game
 {
@@ -79,6 +80,15 @@ namespace Match3Game
 
             GameObject.Find("/00GameMaster").GetComponent<GameManaager>().updateRound();
 
+        }
+        private void OnMouseOver()
+        {
+            if (Input.GetMouseButtonDown(1)) 
+            {
+                List<Gem> desGem = new List<Gem>();
+                desGem.Add(this);
+                StartCoroutine(Board.instance.刪除寶石序列(desGem));
+            }                       
         }
 
         private void TrySwap(Vector2Int targetPos)

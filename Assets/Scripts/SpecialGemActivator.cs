@@ -43,7 +43,7 @@ namespace Match3Game
                 isProcessingEffect = false;
                 yield break;
             }
-            Debug.Log($"觸發特殊寶石效果 : {gem.id} ({gem.x}, {gem.y})");
+            //Debug.Log($"觸發特殊寶石效果 : {gem.id} ({gem.x}, {gem.y})");
             // 等待交換動畫完成
             while (gem.isAnimating)
             {

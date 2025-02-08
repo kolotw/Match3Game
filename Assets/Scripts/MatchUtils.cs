@@ -7,6 +7,7 @@ namespace Match3Game
 {
     public static class MatchUtils
     {
+        // 特殊寶石組合配置
         private static readonly Dictionary<(int, int), int> SpecialGemCombinations = new Dictionary<(int, int), int>
         {
             {(100, 100), 104}, // LineH + LineH = Cross
@@ -21,7 +22,14 @@ namespace Match3Game
             {(102, 103), 109}  // Bomb + Rainbow = MultiBomb
         };
 
-        // 通用方向檢查方法，同時處理水平和垂直
+        public enum ShapeType
+        {
+            None,
+            T,
+            L
+        }
+
+        // 檢查指定方向的連續寶石
         public static List<Gem> CheckDirection(Board board, int x, int y, bool isHorizontal)
         {
             var matches = new List<Gem>();
@@ -31,7 +39,7 @@ namespace Match3Game
             int max = isHorizontal ? board.width : board.height;
             Func<int, Gem> getGem = i => isHorizontal ? board.GetGem(i, y) : board.GetGem(x, i);
 
-            // 向正方向檢查
+            // 向前檢查
             for (int i = (isHorizontal ? x : y); i < max; i++)
             {
                 var gem = getGem(i);
@@ -41,7 +49,7 @@ namespace Match3Game
                     break;
             }
 
-            // 向負方向檢查
+            // 向後檢查
             for (int i = (isHorizontal ? x : y) - 1; i >= 0; i--)
             {
                 var gem = getGem(i);
@@ -65,20 +73,22 @@ namespace Match3Game
 
             if (hasHorizontal && hasVertical)
             {
-                var match = new Board.MatchInfo
-                {
-                    matchedGems = horizontal.Union(vertical).ToList(),
-                    isHorizontal = true,
-                    isVertical = true
-                };
+                var matchedGems = horizontal.Union(vertical).ToList();
+                bool hasExtension;
+                ShapeType shapeType;
 
-                // T/L形狀需要額外的檢查
-                if (checkTLShape && !IsTLShape(horizontal, vertical))
+                // 使用新的 TL 形狀檢查邏輯
+                if (checkTLShape && !IsTLShape(matchedGems, out hasExtension, out shapeType))
                 {
                     return null;
                 }
 
-                return match;
+                return new Board.MatchInfo
+                {
+                    matchedGems = matchedGems,
+                    isHorizontal = true,
+                    isVertical = true
+                };
             }
 
             return null;
@@ -90,11 +100,138 @@ namespace Match3Game
             Gem centerGem = board.GetGem(x, y);
             if (centerGem == null) return false;
 
-            // 檢查水平和垂直方向的可能匹配
-            return IsMatchInDirection(board, x, y, true) || IsMatchInDirection(board, x, y, false);
+            return IsMatchInDirection(board, x, y, true) ||
+                   IsMatchInDirection(board, x, y, false);
         }
 
-        // 檢查一個方向的匹配
+        // 檢查是否為T型或L型的主要方法
+        public static bool IsTLShape(List<Gem> gems, out bool hasExtension, out ShapeType shapeType)
+        {
+            hasExtension = false;
+            shapeType = ShapeType.None;
+
+            if (gems == null || gems.Count < 5)
+                return false;
+
+            // 對每個可能的中心點檢查
+            foreach (var centerGem in gems)
+            {
+                var horizontal = gems.Where(g => g.y == centerGem.y)
+                                   .OrderBy(g => g.x)
+                                   .ToList();
+                var vertical = gems.Where(g => g.x == centerGem.x)
+                                 .OrderBy(g => g.y)
+                                 .ToList();
+
+                // 檢查T型
+                if (IsTShape(horizontal, vertical, out hasExtension))
+                {
+                    shapeType = ShapeType.T;
+                    return true;
+                }
+
+                // 檢查L型
+                if (IsLShape(horizontal, vertical))
+                {
+                    shapeType = ShapeType.L;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // 檢查是否為T型
+        private static bool IsTShape(List<Gem> horizontal, List<Gem> vertical, out bool hasExtension)
+        {
+            hasExtension = false;
+
+            // 基本T型判斷 (3x3)
+            if (horizontal.Count == 3 && vertical.Count == 3)
+            {
+                var allGems = horizontal.Union(vertical).Distinct().ToList();
+                if (allGems.Count == 5) // 確認是真正的T型（總共5個不重複的寶石）
+                {
+                    return true;
+                }
+            }
+
+            // 擴展T型判斷 (4x3 或 3x4)
+            if ((horizontal.Count >= 4 && vertical.Count >= 3) ||
+                (horizontal.Count >= 3 && vertical.Count >= 4))
+            {
+                // 確認形狀是連續的
+                if (AreGemsConsecutive(horizontal) && AreGemsConsecutive(vertical))
+                {
+                    hasExtension = true;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // 檢查是否為L型
+        private static bool IsLShape(List<Gem> horizontal, List<Gem> vertical)
+        {
+            // L型必須是3x3
+            if (horizontal.Count != 3 || vertical.Count != 3)
+                return false;
+
+            // 檢查是否共用一個角落
+            var intersection = horizontal.Intersect(vertical).ToList();
+            if (intersection.Count != 1)
+                return false;
+
+            var cornerGem = intersection[0];
+
+            // 確認corner是在水平和垂直線的端點
+            bool isAtHorizontalEnd = cornerGem.x == horizontal.First().x ||
+                                   cornerGem.x == horizontal.Last().x;
+            bool isAtVerticalEnd = cornerGem.y == vertical.First().y ||
+                                 cornerGem.y == vertical.Last().y;
+
+            return isAtHorizontalEnd && isAtVerticalEnd;
+        }
+
+        // 檢查寶石是否連續
+        private static bool AreGemsConsecutive(List<Gem> gems)
+        {
+            if (gems.Count < 2)
+                return true;
+
+            bool isHorizontal = gems[0].y == gems[1].y;
+
+            for (int i = 1; i < gems.Count; i++)
+            {
+                if (isHorizontal)
+                {
+                    if (gems[i].x != gems[i - 1].x + 1)
+                        return false;
+                }
+                else
+                {
+                    if (gems[i].y != gems[i - 1].y + 1)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        // 檢查特殊寶石組合
+        public static (bool success, int resultType) CheckSpecialGemCombination(Gem first, Gem second)
+        {
+            if (first == null || second == null || first.id < 100 || second.id < 100)
+                return (false, -1);
+
+            var key = (Math.Min(first.id, second.id), Math.Max(first.id, second.id));
+            return SpecialGemCombinations.TryGetValue(key, out int resultId)
+                ? (true, resultId)
+                : (false, -1);
+        }
+
+        // 檢查一個方向上的匹配
         private static bool IsMatchInDirection(Board board, int x, int y, bool isHorizontal)
         {
             Gem centerGem = board.GetGem(x, y);
@@ -102,47 +239,149 @@ namespace Match3Game
             int max = isHorizontal ? board.width : board.height;
             Func<int, Gem> getGem = i => isHorizontal ? board.GetGem(i, y) : board.GetGem(x, i);
 
-            // 檢查三種可能的匹配模式
             return (pos >= 2 && getGem(pos - 2)?.id == getGem(pos - 1)?.id && getGem(pos - 1)?.id == centerGem.id) ||
                    (pos >= 1 && pos < max - 1 && getGem(pos - 1)?.id == centerGem.id && centerGem.id == getGem(pos + 1)?.id) ||
                    (pos < max - 2 && centerGem.id == getGem(pos + 1)?.id && getGem(pos + 1)?.id == getGem(pos + 2)?.id);
         }
 
-        // 找出連續的寶石組別
+        // 尋找連續的寶石群組
         public static List<List<Gem>> FindContinuousGemGroups(IGrouping<int, Gem> group)
         {
             var gems = group.ToList();
             var result = new List<List<Gem>>();
+            //Debug.Log($"開始處理群組，總寶石數: {gems.Count}");
 
-            // 檢查水平和垂直方向
-            foreach (var isHorizontal in new[] { true, false })
+            // 檢查是否形成特殊形狀（T型或L型）
+            bool hasExtension;
+            ShapeType shapeType;
+            if (IsTLShape(gems, out hasExtension, out shapeType))
             {
-                var groups = gems.GroupBy(g => isHorizontal ? g.y : g.x)
-                    .SelectMany(line =>
-                    {
-                        var sorted = line.OrderBy(g => isHorizontal ? g.x : g.y).ToList();
-                        return GetConsecutiveGroups(sorted, isHorizontal);
-                    });
-
-                result.AddRange(groups);
+                //Debug.Log($"找到特殊形狀: {shapeType}, 延伸: {hasExtension}");
+                result.Add(gems);
+                return result;
             }
 
-            // 檢查特殊形狀
-            foreach (var gem in gems)
+            // 找出水平和垂直的最大連續線
+            var maxHorizontal = 0;
+            var maxVertical = 0;
+            var horizontalLines = new List<List<Gem>>();
+            var verticalLines = new List<List<Gem>>();
+
+            // 檢查水平連線
+            foreach (var line in gems.GroupBy(g => g.y))
             {
-                var specialGroup = CheckSpecialShape(gems, gem);
-                if (specialGroup?.Count >= 5)
+                var sorted = line.OrderBy(g => g.x).ToList();
+                var groups = GetConsecutiveGroups(sorted, true);
+                horizontalLines.AddRange(groups);
+                if (groups.Any())
                 {
-                    result.Add(specialGroup);
+                    maxHorizontal = Math.Max(maxHorizontal, groups.Max(g => g.Count));
                 }
             }
 
-            return result.Where(g => g.Count >= 4)
-                        .Distinct(new ListComparer<Gem>())
-                        .ToList();
+            // 檢查垂直連線
+            foreach (var line in gems.GroupBy(g => g.x))
+            {
+                var sorted = line.OrderBy(g => g.y).ToList();
+                var groups = GetConsecutiveGroups(sorted, false);
+                verticalLines.AddRange(groups);
+                if (groups.Any())
+                {
+                    maxVertical = Math.Max(maxVertical, groups.Max(g => g.Count));
+                }
+            }
+
+            //Debug.Log($"最大水平連線: {maxHorizontal}, 最大垂直連線: {maxVertical}");
+
+            // 加入4連線或更長的線
+            result.AddRange(horizontalLines.Where(l => l.Count >= 4));
+            result.AddRange(verticalLines.Where(l => l.Count >= 4));
+
+            // 如果找到的組合為空但原始寶石數量足夠，可能是特殊情況
+            if (result.Count == 0 && gems.Count >= 4)
+            {
+                //Debug.Log("特殊情況檢查: 加入原始寶石組");
+                result.Add(gems);
+            }
+
+            return result.Distinct(new ListComparer<Gem>()).ToList();
         }
 
-        // 獲取連續的寶石組
+        // 檢查特殊寶石類型
+        public static (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems)
+            確認特殊寶石類別(List<Gem> gems, int triggerX = 0, int triggerY = 0)
+        {
+            if (gems == null || gems.Count < 4)
+            {
+                return (-1, false, false, new List<Gem>());
+            }
+
+            // 先檢查每個寶石作為潛在的轉角點
+            foreach (var gem in gems)
+            {
+                var horizontal = gems.Where(g => g.y == gem.y)
+                                   .OrderBy(g => g.x)
+                                   .ToList();
+                var vertical = gems.Where(g => g.x == gem.x)
+                                 .OrderBy(g => g.y)
+                                 .ToList();
+                //Debug.Log($" hCount: {horizontal.Count} vCount: {vertical.Count}");
+                // 檢查是否形成 L 型
+                if (horizontal.Count == 3 && vertical.Count == 3)
+                {
+                    var intersection = horizontal.Intersect(vertical).ToList();
+                    if (intersection.Count == 1)
+                    {
+                        var cornerGem = intersection[0];
+                        bool isAtHorizontalEnd = cornerGem.x == horizontal.First().x ||
+                                               cornerGem.x == horizontal.Last().x;
+                        bool isAtVerticalEnd = cornerGem.y == vertical.First().y ||
+                                             cornerGem.y == vertical.Last().y;
+
+                        if (isAtHorizontalEnd && isAtVerticalEnd)
+                        {
+                            //Debug.Log($"Found L shape at ({cornerGem.x}, {cornerGem.y})");
+                            return (2, true, true, gems);
+                        }
+                    }
+                }
+
+                // 檢查是否形成 T 型
+                bool hasExtension;
+                if (IsTShape(horizontal, vertical, out hasExtension))
+                {
+                    //Debug.Log($"Found T shape at ({gem.x}, {gem.y})");
+                    return (hasExtension ? 3 : 2, true, true, gems);
+                }
+            }
+
+            // 檢查連線
+            int maxHorizontal = CheckLine(gems, true);
+            int maxVertical = CheckLine(gems, false);
+
+            // 檢查5連線
+            if (maxHorizontal >= 5 || maxVertical >= 5)
+            {
+                //Debug.Log($"Found 5 or more consecutive gems: H={maxHorizontal}, V={maxVertical}");
+                return (3, maxHorizontal >= 5, maxVertical >= 5, gems);
+            }
+
+            // 檢查4連線
+            if (maxHorizontal == 4)
+            {
+                //Debug.Log("Found 4 consecutive horizontal gems");
+                return (0, true, false, gems);
+            }
+            if (maxVertical == 4)
+            {
+                //Debug.Log("Found 4 consecutive vertical gems");
+                return (1, false, true, gems);
+            }
+
+            return (-1, false, false, gems);
+        }
+
+        // 輔助方法：取得連續的寶石群組
         private static List<List<Gem>> GetConsecutiveGroups(List<Gem> gems, bool isHorizontal)
         {
             var groups = new List<List<Gem>>();
@@ -170,138 +409,39 @@ namespace Match3Game
             return groups;
         }
 
-        // 檢查特殊形狀
-        private static List<Gem> CheckSpecialShape(List<Gem> allGems, Gem center)
+        // 檢查一行或一列的最大連續數
+        private static int CheckLine(List<Gem> gems, bool isHorizontal)
         {
-            var horizontal = allGems.Where(g => g.y == center.y).OrderBy(g => g.x).ToList();
-            var vertical = allGems.Where(g => g.x == center.x).OrderBy(g => g.y).ToList();
+            int maxLength = 0;
+            var groups = gems.GroupBy(g => isHorizontal ? g.y : g.x);
 
-            if (horizontal.Count >= 3 && vertical.Count >= 3)
+            foreach (var group in groups)
             {
-                return horizontal.Union(vertical).ToList();
-            }
+                var sortedGems = group.OrderBy(g => isHorizontal ? g.x : g.y).ToList();
+                int currentLength = 1;
+                int maxCurrentLength = 1;
 
-            return null;
-        }
-
-        // 確定特殊寶石類型
-        // 在 MatchUtils.cs 中添加更詳細的檢查
-        public static (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems)
-            確認特殊寶石類別(List<Gem> gems,
-            int triggerX = 0, int triggerY = 0
-            )
-        {
-            if (gems == null || gems.Count < 4)
-            {
-                return (-1, false, false, new List<Gem>());
-            }
-
-            // 檢查水平方向的連線
-            bool hasHorizontalLine = false;
-            var horizontalGroups = gems.GroupBy(g => g.y)
-                .Select(group =>
+                for (int i = 1; i < sortedGems.Count; i++)
                 {
-                    var sortedGems = group.OrderBy(g => g.x).ToList();
-                    int consecutiveCount = 1;
-                    for (int i = 1; i < sortedGems.Count; i++)
+                    if ((isHorizontal && sortedGems[i].x == sortedGems[i - 1].x + 1) ||
+                        (!isHorizontal && sortedGems[i].y == sortedGems[i - 1].y + 1))
                     {
-                        if (sortedGems[i].x == sortedGems[i - 1].x + 1)
-                        {
-                            consecutiveCount++;
-                            if (consecutiveCount >= 3)
-                            {
-                                hasHorizontalLine = true;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            consecutiveCount = 1;
-                        }
+                        currentLength++;
+                        maxCurrentLength = Math.Max(maxCurrentLength, currentLength);
                     }
-                    return hasHorizontalLine;
-                })
-                .Any(x => x);
-
-            // 檢查垂直方向的連線
-            bool hasVerticalLine = false;
-            var verticalGroups = gems.GroupBy(g => g.x)
-                .Select(group =>
-                {
-                    var sortedGems = group.OrderBy(g => g.y).ToList();
-                    int consecutiveCount = 1;
-                    for (int i = 1; i < sortedGems.Count; i++)
+                    else
                     {
-                        if (sortedGems[i].y == sortedGems[i - 1].y + 1)
-                        {
-                            consecutiveCount++;
-                            if (consecutiveCount >= 3)
-                            {
-                                hasVerticalLine = true;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            consecutiveCount = 1;
-                        }
+                        currentLength = 1;
                     }
-                    return hasVerticalLine;
-                })
-                .Any(x => x);
+                }
 
-            bool isCornerMatch = hasHorizontalLine && hasVerticalLine;
-            int resourceType;
-
-            // 決定特殊寶石類型
-            if (isCornerMatch)
-            {
-                resourceType = gems.Count >= 6 ? 3 : 2; // Rainbow or Bomb
-            }
-            else
-            {
-                if (gems.Count >= 5)
-                {
-                    resourceType = 3; // Rainbow
-                }
-                else if (hasVerticalLine)
-                {
-                    resourceType = 1; // 垂直清除線
-                }
-                else if (hasHorizontalLine)
-                {
-                    resourceType = 0; // 水平清除線
-                }
-                else
-                {
-                    resourceType = -1;
-                }
+                maxLength = Math.Max(maxLength, maxCurrentLength);
             }
 
-            Debug.Log($"確認特殊寶石類別 - 數量:{gems.Count}, 水平:{hasHorizontalLine}, " +
-                      $"垂直:{hasVerticalLine}, 角落:{isCornerMatch}, 類型:{resourceType}");
-
-            return (resourceType, hasHorizontalLine, hasVerticalLine, gems);
+            return maxLength;
         }
 
-        // 檢查特殊寶石組合
-        public static (bool success, int resultType) CheckSpecialGemCombination(Gem first, Gem second)
-        {
-            if (first == null || second == null || first.id < 100 || second.id < 100)
-                return (false, -1);
-
-            var key = (Math.Min(first.id, second.id), Math.Max(first.id, second.id));
-            return SpecialGemCombinations.TryGetValue(key, out int resultId)
-                ? (true, resultId)
-                : (false, -1);
-        }
-
-        private static bool IsTLShape(List<Gem> horizontal, List<Gem> vertical)
-        {
-            return (horizontal.Count >= 3 && vertical.Count >= 3) &&
-                   (horizontal.Count >= 2 || vertical.Count >= 2);
-        }
-
+        // 用於比較寶石列表的比較器
         private class ListComparer<T> : IEqualityComparer<List<T>>
         {
             public bool Equals(List<T> x, List<T> y) =>

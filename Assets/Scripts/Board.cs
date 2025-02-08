@@ -68,13 +68,21 @@ namespace Match3Game
 
 
         // 遊戲常數：定義各種動畫和操作的持續時間
-        public const float SWAP_DURATION = 0.2f;     // 寶石交換動畫持續時間
-        public const float DESTROY_DELAY = 0.3f;     // 寶石消除的延遲時間（改短一點）
-        public const float FADE_DELAY = 0.3f;        // 淡出延遲（大幅縮短）
-        public const float COLLECT_DELAY = 0.3f;     // 收集寶石的延遲時間
-        public const float COMPLETE_DELAY = 0.1f;    // 完成操作的延遲時間（稍微加長）
-        public const float FALL_DELAY = 0.05f;        // 寶石下落的延遲時間（與消除同步）
-        public const float SPECIAL_EFFECT_DELAY = 0.5f;  // 新增：特殊寶石效果延遲
+        // 基本操作 - 最快速度
+        public const float SWAP_DURATION = 0.08f;     // 交換需要快速、流暢
+        public const float FALL_DELAY = 0.1f;        // 下落也要快速，保持遊戲節奏
+
+        // 消除相關 - 中等速度
+        public const float DESTROY_DELAY = 0.12f;      // 消除前的短暫等待
+        public const float FADE_DELAY = 0.15f;        // 淡出效果稍微慢一點以便看清
+
+        // 完成動作 - 稍慢
+        public const float COMPLETE_DELAY = 0.2f;    // 動作完成的等待時間
+        public const float COLLECT_DELAY = 0.25f;      // 收集寶石稍微放慢以強調效果
+        public const float WAIT_FOR_DISPEAR = 0.3f;    // 等待消失的時間
+
+        // 特殊效果 - 最慢
+        public const float SPECIAL_EFFECT_DELAY = 0.3f; // 特殊效果放慢以突出表現
 
         #endregion
 
@@ -509,7 +517,8 @@ namespace Match3Game
 
                             if (matchGroup != null)
                             {
-                                var (resourceType, isHorizontal, isVertical, _) = MatchUtils.確認特殊寶石類別(matchGroup);
+                                var (resourceType, isHorizontal, isVertical, _) = 
+                                    MatchUtils.確認特殊寶石類別(matchGroup);
                                 if (resourceType != -1)
                                 {
                                     foreach (var groupGem in matchGroup)
@@ -891,7 +900,7 @@ namespace Match3Game
             }
 
             var matches = matchFinder.FindAllMatches();
-
+            
             foreach (var match in matches)
             {
                 foreach (var gem in match.matchedGems)
@@ -1029,7 +1038,7 @@ namespace Match3Game
             return MatchUtils.FindContinuousGemGroups(group);
         }
         // 修改 刪除寶石序列 中的特殊寶石生成邏輯
-        private IEnumerator 刪除寶石序列(List<Gem> matchedGems)
+        public IEnumerator 刪除寶石序列(List<Gem> matchedGems)
         {
             var processedGems = new HashSet<Gem>();
             var matches = matchFinder.FindAllMatches();
@@ -1038,11 +1047,11 @@ namespace Match3Game
             設置觸發點(matches, gem1, gem2);
 
             var matchGroups = matches.SelectMany(m => m.matchedGems)
-                                    .Where(gem => gem != null)
-                                    .GroupBy(gem => gem.id)
-                                    .SelectMany(group => MatchUtils.FindContinuousGemGroups(group))
-                                    .Where(group => group.Count >= 4)
-                                    .ToList();
+                            .Where(gem => gem != null)
+                            .GroupBy(gem => gem.id)
+                            .SelectMany(group => MatchUtils.FindContinuousGemGroups(group))
+                            .Where(group => group.Count >= 4)
+                            .ToList();
             matchGroups = matchGroups.Distinct().ToList();
 
             // 先觸發要被消除的特殊寶石效果
@@ -1073,42 +1082,33 @@ namespace Match3Game
             // 玩家觸發的特殊寶石檢查和生成
             if (由玩家觸發生成)
             {
-                // 檢查是否為特殊寶石組合
-                if (gem1?.id >= 100 && gem2?.id >= 100)
-                {
-                    int originalId1 = gem1.id;
-                    var (success, resultType) = MatchUtils.CheckSpecialGemCombination(gem1, gem2);
-                    if (success)
-                    {
-                        gem1.id = resultType;
-                        specialGemActivator.啟動特殊寶石(gem1);
-                        gem1.id = originalId1;
-                        由玩家觸發生成 = false;
-                        yield break;
-                    }
-                }
+                //foreach (var group in matchGroups)
+                //{
+                //    Debug.Log($"處理匹配群組，大小: {group.Count}");
+                //    // 輸出群組中寶石的座標
+                //    foreach (var gem in group)
+                //    {
+                //        Debug.Log($"寶石座標: ({gem.x}, {gem.y})");
+                //    }
+                //}
 
-                // 使用已經設置好的玩家觸發點來生成特殊寶石
                 for (int i = 0; i < matchGroups.Count && i < playerTriggerX.Length; i++)
                 {
-                    var group = matchGroups[i]
-                        .Where(g => !processedGemIds.Contains(g.GetInstanceID()))
-                        .ToList();
-
+                    var group = matchGroups[i].ToList();
                     if (group.Count < 4) continue;
+                    
+                    Debug.Log($"觸發點：({playerTriggerX[i]} , {playerTriggerY[i]})");
 
-                    // 使用 MatchUtils.確認特殊寶石類別 來判斷是否可以生成特殊寶石
-                    Debug.Log($"確認特殊寶石類別 觸發點XY: ({playerTriggerX[i]}, {playerTriggerY[i]})");
-                    var (resourceType, isHorizontal, isVertical, _) = MatchUtils.確認特殊寶石類別(group, playerTriggerX[i], playerTriggerY[i]);
+                    var (resourceType, isHorizontal, isVertical, _) =
+                        MatchUtils.確認特殊寶石類別(group, playerTriggerX[i], playerTriggerY[i]);
 
                     if (resourceType != -1)
                     {
                         triggerX = playerTriggerX[i];
                         triggerY = playerTriggerY[i];
                         if (IsValidPosition(triggerX, triggerY))
-                        {                            
+                        {
                             var newGem = 生成特殊寶石(triggerX, triggerY, resourceType);
-                            Debug.Log($"生成特殊寶石 create byPlayer: ({triggerX}, {triggerY}),Res: {resourceType} count: {group.Count}");
                             if (newGem != null)
                             {
                                 processedGemIds.Add(newGem.GetInstanceID());
@@ -1145,7 +1145,7 @@ namespace Match3Game
                             triggerX = selectedGem.x;
                             triggerY = selectedGem.y;
 
-                            Debug.Log($"非玩家操作時 - 隨機位置({triggerX},{triggerY})生成 Type:{resourceType} count:{group.Count}");
+                            //Debug.Log($"非玩家操作時 - 隨機位置({triggerX},{triggerY})生成 Type:{resourceType} count:{group.Count}");
 
                             if (IsValidPosition(triggerX, triggerY))
                             {

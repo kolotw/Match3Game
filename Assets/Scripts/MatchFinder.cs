@@ -15,14 +15,31 @@ namespace Match3Game
 
         private Board.MatchInfo CheckTLShapeMatch(int centerX, int centerY)
         {
-            // 檢查 T 形或 L 形，checkTLShape 設為 true
-            return MatchUtils.CheckSpecialMatch(board, centerX, centerY, true);
-        }
+            var horizontal = MatchUtils.CheckDirection(board, centerX, centerY, true);
+            var vertical = MatchUtils.CheckDirection(board, centerX, centerY, false);
 
-        private Board.MatchInfo CheckSpecialCrossMatch(int centerX, int centerY)
-        {
-            // 檢查十字形，checkTLShape 設為 false
-            return MatchUtils.CheckSpecialMatch(board, centerX, centerY, false);
+            if (horizontal.Count >= 3 && vertical.Count >= 3)
+            {
+                var allGems = horizontal.Union(vertical).ToList();
+                bool hasExtension;
+                MatchUtils.ShapeType shapeType;
+
+                if (MatchUtils.IsTLShape(allGems, out hasExtension, out shapeType))
+                {
+                    var (resourceType, _, _, _) = MatchUtils.確認特殊寶石類別(allGems, centerX, centerY);
+                    if (resourceType >= 0)  // 確認是有效的特殊寶石類型
+                    {
+                        return new Board.MatchInfo
+                        {
+                            matchedGems = allGems,
+                            isHorizontal = true,
+                            isVertical = true
+                        };
+                    }
+                }
+            }
+
+            return null;
         }
 
         public List<Board.MatchInfo> FindAllMatches()
@@ -30,26 +47,15 @@ namespace Match3Game
             List<Board.MatchInfo> allMatches = new List<Board.MatchInfo>();
             HashSet<(int x, int y)> processedPositions = new HashSet<(int x, int y)>();
 
-            // 先檢查特殊形狀（十字、T型和L型）
+            // 先檢查特殊形狀
             for (int x = 0; x < board.width; x++)
             {
                 for (int y = 0; y < board.height; y++)
                 {
-                    if (board.gems[x, y] == null) continue;
-
-                    // 檢查十字形匹配
-                    var specialCrossMatch = CheckSpecialCrossMatch(x, y);
-                    if (specialCrossMatch != null)
-                    {
-                        allMatches.Add(specialCrossMatch);
-                        foreach (var gem in specialCrossMatch.matchedGems)
-                        {
-                            processedPositions.Add((gem.x, gem.y));
-                        }
+                    if (board.gems[x, y] == null || processedPositions.Contains((x, y)))
                         continue;
-                    }
 
-                    // 檢查 T型和L型匹配
+                    // 優先檢查 T/L 型匹配
                     var tlMatch = CheckTLShapeMatch(x, y);
                     if (tlMatch != null)
                     {
@@ -60,14 +66,33 @@ namespace Match3Game
                         }
                         continue;
                     }
+
+                    // 其次檢查十字形匹配
+                    var specialCrossMatch = CheckSpecialCrossMatch(x, y);
+                    if (specialCrossMatch != null)
+                    {
+                        allMatches.Add(specialCrossMatch);
+                        foreach (var gem in specialCrossMatch.matchedGems)
+                        {
+                            processedPositions.Add((gem.x, gem.y));
+                        }
+                        continue;
+                    }
                 }
             }
 
-            // 檢查普通匹配
+            // 最後檢查普通匹配
             CheckNormalMatches(allMatches, processedPositions);
 
             return allMatches;
         }
+        private Board.MatchInfo CheckSpecialCrossMatch(int centerX, int centerY)
+        {
+            // 檢查十字形，checkTLShape 設為 false
+            return MatchUtils.CheckSpecialMatch(board, centerX, centerY, false);
+        }
+
+        
 
         private void CheckNormalMatches(List<Board.MatchInfo> allMatches, HashSet<(int x, int y)> processedPositions)
         {
