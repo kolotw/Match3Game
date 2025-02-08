@@ -70,7 +70,7 @@ namespace Match3Game
         // 遊戲常數：定義各種動畫和操作的持續時間
         // 基本操作 - 最快速度
         public const float SWAP_DURATION = 0.08f;     // 交換需要快速、流暢
-        public const float FALL_DELAY = 0.1f;        // 下落也要快速，保持遊戲節奏
+        public const float FALL_DELAY = 0.05f;        // 下落也要快速，保持遊戲節奏
 
         // 消除相關 - 中等速度
         public const float DESTROY_DELAY = 0.12f;      // 消除前的短暫等待
@@ -1274,7 +1274,7 @@ namespace Match3Game
 
             // 定期清理遊戲板
             // 每300幀執行一次清理操作，優化遊戲性能和資源管理
-            if (Time.frameCount % 30 == 0)
+            if (Time.frameCount % 10 == 0)
             {
                 CleanupBoard();
             }
