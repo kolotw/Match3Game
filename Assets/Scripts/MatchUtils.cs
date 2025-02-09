@@ -145,6 +145,14 @@ namespace Match3Game
         private static bool IsTShape(List<Gem> horizontal, List<Gem> vertical, out bool hasExtension)
         {
             hasExtension = false;
+            //Debug.Log($"檢查T型 - 水平數量: {horizontal.Count}, 垂直數量: {vertical.Count}");
+
+            // 先檢查是否有5連線，如果有就不是T型
+            if (horizontal.Count >= 5)
+            {
+                //Debug.Log("發現5連線，不是T型");
+                return false;
+            }
 
             // 基本T型判斷 (3x3)
             if (horizontal.Count == 3 && vertical.Count == 3)
@@ -152,22 +160,25 @@ namespace Match3Game
                 var allGems = horizontal.Union(vertical).Distinct().ToList();
                 if (allGems.Count == 5) // 確認是真正的T型（總共5個不重複的寶石）
                 {
+                    //Debug.Log("發現基本T型(3x3)");
                     return true;
                 }
             }
 
             // 擴展T型判斷 (4x3 或 3x4)
-            if ((horizontal.Count >= 4 && vertical.Count >= 3) ||
-                (horizontal.Count >= 3 && vertical.Count >= 4))
+            if ((horizontal.Count == 4 && vertical.Count >= 3) ||
+                (horizontal.Count >= 3 && vertical.Count == 4))
             {
                 // 確認形狀是連續的
                 if (AreGemsConsecutive(horizontal) && AreGemsConsecutive(vertical))
                 {
                     hasExtension = true;
+                    //Debug.Log("發現擴展T型");
                     return true;
                 }
             }
 
+            //Debug.Log("不符合T型條件");
             return false;
         }
 
@@ -249,132 +260,97 @@ namespace Match3Game
         {
             var gems = group.ToList();
             var result = new List<List<Gem>>();
-            //Debug.Log($"開始處理群組，總寶石數: {gems.Count}");
+            Debug.Log($"開始處理群組，總寶石數: {gems.Count}");
 
-            // 檢查是否形成特殊形狀（T型或L型）
+            // 1. 先檢查 T/L 型
             bool hasExtension;
             ShapeType shapeType;
             if (IsTLShape(gems, out hasExtension, out shapeType))
             {
-                //Debug.Log($"找到特殊形狀: {shapeType}, 延伸: {hasExtension}");
+                Debug.Log($"找到特殊形狀: {shapeType}, 延伸: {hasExtension}");
                 result.Add(gems);
                 return result;
             }
 
-            // 找出水平和垂直的最大連續線
-            var maxHorizontal = 0;
-            var maxVertical = 0;
+            // 2. 再檢查 5 連線
+            int maxHorizontal = CheckLine(gems, true);
+            int maxVertical = CheckLine(gems, false);
+
+            if (maxHorizontal >= 5 || maxVertical >= 5)
+            {
+                Debug.Log($"找到5連線 - 水平: {maxHorizontal}, 垂直: {maxVertical}");
+                result.Add(gems);
+                return result;
+            }
+
+            // 3. 最後才處理 4 連線
             var horizontalLines = new List<List<Gem>>();
             var verticalLines = new List<List<Gem>>();
 
-            // 檢查水平連線
             foreach (var line in gems.GroupBy(g => g.y))
             {
                 var sorted = line.OrderBy(g => g.x).ToList();
                 var groups = GetConsecutiveGroups(sorted, true);
-                horizontalLines.AddRange(groups);
-                if (groups.Any())
-                {
-                    maxHorizontal = Math.Max(maxHorizontal, groups.Max(g => g.Count));
-                }
+                horizontalLines.AddRange(groups.Where(g => g.Count == 4));
             }
 
-            // 檢查垂直連線
             foreach (var line in gems.GroupBy(g => g.x))
             {
                 var sorted = line.OrderBy(g => g.y).ToList();
                 var groups = GetConsecutiveGroups(sorted, false);
-                verticalLines.AddRange(groups);
-                if (groups.Any())
-                {
-                    maxVertical = Math.Max(maxVertical, groups.Max(g => g.Count));
-                }
+                verticalLines.AddRange(groups.Where(g => g.Count == 4));
             }
 
-            //Debug.Log($"最大水平連線: {maxHorizontal}, 最大垂直連線: {maxVertical}");
+            result.AddRange(horizontalLines);
+            result.AddRange(verticalLines);
 
-            // 加入4連線或更長的線
-            result.AddRange(horizontalLines.Where(l => l.Count >= 4));
-            result.AddRange(verticalLines.Where(l => l.Count >= 4));
-
-            // 如果找到的組合為空但原始寶石數量足夠，可能是特殊情況
-            if (result.Count == 0 && gems.Count >= 4)
-            {
-                //Debug.Log("特殊情況檢查: 加入原始寶石組");
-                result.Add(gems);
-            }
-
+            //Debug.Log($"找到 4 連線 - 水平: {horizontalLines.Count}, 垂直: {verticalLines.Count}");
             return result.Distinct(new ListComparer<Gem>()).ToList();
         }
 
         // 檢查特殊寶石類型
         public static (int resourceType, bool isHorizontal, bool isVertical, List<Gem> matchedGems)
-            確認特殊寶石類別(List<Gem> gems, int triggerX = 0, int triggerY = 0)
+    確認特殊寶石類別(List<Gem> gems, int triggerX = 0, int triggerY = 0)
         {
             if (gems == null || gems.Count < 4)
             {
                 return (-1, false, false, new List<Gem>());
             }
 
-            // 先檢查每個寶石作為潛在的轉角點
-            foreach (var gem in gems)
-            {
-                var horizontal = gems.Where(g => g.y == gem.y)
-                                   .OrderBy(g => g.x)
-                                   .ToList();
-                var vertical = gems.Where(g => g.x == gem.x)
-                                 .OrderBy(g => g.y)
-                                 .ToList();
-                //Debug.Log($" hCount: {horizontal.Count} vCount: {vertical.Count}");
-                // 檢查是否形成 L 型
-                if (horizontal.Count == 3 && vertical.Count == 3)
-                {
-                    var intersection = horizontal.Intersect(vertical).ToList();
-                    if (intersection.Count == 1)
-                    {
-                        var cornerGem = intersection[0];
-                        bool isAtHorizontalEnd = cornerGem.x == horizontal.First().x ||
-                                               cornerGem.x == horizontal.Last().x;
-                        bool isAtVerticalEnd = cornerGem.y == vertical.First().y ||
-                                             cornerGem.y == vertical.Last().y;
-
-                        if (isAtHorizontalEnd && isAtVerticalEnd)
-                        {
-                            //Debug.Log($"Found L shape at ({cornerGem.x}, {cornerGem.y})");
-                            return (2, true, true, gems);
-                        }
-                    }
-                }
-
-                // 檢查是否形成 T 型
-                bool hasExtension;
-                if (IsTShape(horizontal, vertical, out hasExtension))
-                {
-                    //Debug.Log($"Found T shape at ({gem.x}, {gem.y})");
-                    return (hasExtension ? 3 : 2, true, true, gems);
-                }
-            }
-
-            // 檢查連線
+            // 先檢查是否有5連線
             int maxHorizontal = CheckLine(gems, true);
             int maxVertical = CheckLine(gems, false);
 
-            // 檢查5連線
-            if (maxHorizontal >= 5 || maxVertical >= 5)
+            // 優先處理5連線
+            if (maxHorizontal >= 5)
             {
-                //Debug.Log($"Found 5 or more consecutive gems: H={maxHorizontal}, V={maxVertical}");
-                return (3, maxHorizontal >= 5, maxVertical >= 5, gems);
+                Debug.Log($"確認了水平5連線");
+                return (3, true, false, gems);
+            }
+            if (maxVertical >= 5)
+            {
+                Debug.Log($"確認了垂直5連線");
+                return (3, false, true, gems);
             }
 
-            // 檢查4連線
+            // 檢查T/L型
+            bool hasExtension;
+            ShapeType shapeType;
+            if (IsTLShape(gems, out hasExtension, out shapeType))
+            {
+                Debug.Log($"確認了{shapeType}型，擴展:{hasExtension}");
+                return (hasExtension ? 3 : 2, true, true, gems);
+            }
+
+            // 最後處理4連線
             if (maxHorizontal == 4)
             {
-                //Debug.Log("Found 4 consecutive horizontal gems");
+                Debug.Log($"確認了水平4連線");
                 return (0, true, false, gems);
             }
             if (maxVertical == 4)
             {
-                //Debug.Log("Found 4 consecutive vertical gems");
+                Debug.Log($"確認了垂直4連線");
                 return (1, false, true, gems);
             }
 
@@ -413,31 +389,46 @@ namespace Match3Game
         private static int CheckLine(List<Gem> gems, bool isHorizontal)
         {
             int maxLength = 0;
+
+            // 按行或列分組
             var groups = gems.GroupBy(g => isHorizontal ? g.y : g.x);
 
             foreach (var group in groups)
             {
+                // 按X或Y座標排序
                 var sortedGems = group.OrderBy(g => isHorizontal ? g.x : g.y).ToList();
-                int currentLength = 1;
-                int maxCurrentLength = 1;
 
+                // 檢查最長的連續序列
+                int currentLength = 1;
                 for (int i = 1; i < sortedGems.Count; i++)
                 {
-                    if ((isHorizontal && sortedGems[i].x == sortedGems[i - 1].x + 1) ||
-                        (!isHorizontal && sortedGems[i].y == sortedGems[i - 1].y + 1))
+                    bool isConsecutive = false;
+                    if (isHorizontal)
+                    {
+                        isConsecutive = sortedGems[i].x == sortedGems[i - 1].x + 1;
+                    }
+                    else
+                    {
+                        isConsecutive = sortedGems[i].y == sortedGems[i - 1].y + 1;
+                    }
+
+                    if (isConsecutive)
                     {
                         currentLength++;
-                        maxCurrentLength = Math.Max(maxCurrentLength, currentLength);
+                        if (currentLength > maxLength)
+                        {
+                            maxLength = currentLength;
+                            //Debug.Log($"找到{'水平' if isHorizontal else '垂直'}連線: {maxLength} @ row/col {group.Key}");
+                        }
                     }
                     else
                     {
                         currentLength = 1;
                     }
                 }
-
-                maxLength = Math.Max(maxLength, maxCurrentLength);
             }
 
+            //Debug.Log($"最終{'水平' if isHorizontal else '垂直'}最大連線: {maxLength}");
             return maxLength;
         }
 

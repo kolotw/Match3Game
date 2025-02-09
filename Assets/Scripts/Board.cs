@@ -1092,6 +1092,7 @@ namespace Match3Game
 
                     var (resourceType, isHorizontal, isVertical, _) =
                         MatchUtils.確認特殊寶石類別(group, playerTriggerX[i], playerTriggerY[i]);
+                    Debug.Log($"特殊寶石類型：{resourceType}");
 
                     if (resourceType != -1)
                     {
