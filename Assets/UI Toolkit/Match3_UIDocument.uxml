@@ -1,12 +1,12 @@
 <engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <Style src="project://database/Assets/UI%20Toolkit/Match3_StyleUSS.uss?fileID=7433441132597879392&amp;guid=f9fa0734352e46c4e963d29708d2aea5&amp;type=3#Match3_StyleUSS" />
     <engine:VisualElement name="VE0" style="flex-grow: 1;">
-        <engine:VisualElement name="VE_SP_T" style="flex-grow: 0.5;" />
+        <engine:VisualElement name="VE_SP_T" style="flex-grow: 0.3;" />
         <engine:VisualElement name="Title" style="flex-grow: 0.2; background-image: none; flex-direction: row; height: auto; min-height: 32px; max-height: 400px;">
             <engine:VisualElement name="VE_SP_L" style="flex-grow: 0.5; flex-shrink: 0;" />
             <engine:VisualElement name="TitleL" style="flex-grow: 1; background-image: url(&quot;project://database/Assets/Download/UI/tilemap_packed.png?fileID=721353932&amp;guid=843698a484656da488fe5104a32268ef&amp;type=3#tilemap_packed_34&quot;);" />
             <engine:VisualElement name="TitleM" style="flex-grow: 1; background-image: url(&quot;project://database/Assets/Download/UI/tilemap_packed.png?fileID=1192800622&amp;guid=843698a484656da488fe5104a32268ef&amp;type=3#tilemap_packed_35&quot;);">
-                <engine:Label text="Match3Game" style="flex-grow: 1; -unity-text-align: middle-center; font-size: 66px; -unity-font-definition: url(&quot;project://database/Assets/Download/Fonts/msjh.ttc?fileID=12800000&amp;guid=9e5a35e9b92ae9949b52f0649e4060de&amp;type=3#msjh&quot;); align-self: center; justify-content: space-evenly; align-items: center; align-content: flex-start; color: rgb(252, 235, 208); letter-spacing: 20px;" />
+                <engine:Label text="Match3Game" name="Label" style="flex-grow: 1; -unity-text-align: middle-center; font-size: 66px; -unity-font-definition: url(&quot;project://database/Assets/Download/Fonts/Square%20Game.otf?fileID=12800000&amp;guid=b368d0376e66d1545a8425ee0f9b0971&amp;type=3#Square Game&quot;); align-self: center; justify-content: space-evenly; align-items: center; align-content: flex-start; color: rgb(252, 235, 208); letter-spacing: 20px;" />
             </engine:VisualElement>
             <engine:VisualElement name="TitleR" style="flex-grow: 1; background-image: url(&quot;project://database/Assets/Download/UI/tilemap_packed.png?fileID=843524264&amp;guid=843698a484656da488fe5104a32268ef&amp;type=3#tilemap_packed_36&quot;);" />
             <engine:VisualElement name="VE_SP_R" style="flex-grow: 0.5; flex-shrink: 0;" />
@@ -42,7 +42,8 @@
             </engine:VisualElement>
         </engine:VisualElement>
         <engine:VisualElement name="VE3" style="flex-grow: 1;">
-            <engine:Label text="kolonia" style="font-size: 118px; -unity-font-definition: url(&quot;project://database/Assets/Download/Fonts/Square%20Game.otf?fileID=12800000&amp;guid=b368d0376e66d1545a8425ee0f9b0971&amp;type=3#Square Game&quot;); -unity-text-align: middle-center; flex-grow: 1;" />
+            <engine:VisualElement name="VE_IMG" style="flex-grow: 1; background-image: url(&quot;project://database/Assets/Download/koloFigure_pose03sc.png?fileID=-5241483964165126313&amp;guid=9aa8e1b9297a7e04983547ac043081f3&amp;type=3#koloFigure_pose03sc_0&quot;); -unity-background-scale-mode: scale-to-fit; padding-top: 0; margin-top: 25px; background-position-y: top 0; background-color: rgba(0, 0, 0, 0); margin-bottom: 10px;" />
+            <engine:Label text="kolonia" style="font-size: 80px; -unity-font-definition: url(&quot;project://database/Assets/Download/Fonts/Square%20Game.otf?fileID=12800000&amp;guid=b368d0376e66d1545a8425ee0f9b0971&amp;type=3#Square Game&quot;); -unity-text-align: middle-center; flex-grow: 0.3; color: rgb(199, 199, 199);" />
         </engine:VisualElement>
     </engine:VisualElement>
 </engine:UXML>

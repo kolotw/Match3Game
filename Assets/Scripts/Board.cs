@@ -70,7 +70,7 @@ namespace Match3Game
         // 遊戲常數：定義各種動畫和操作的持續時間
         // 基本操作 - 最快速度
         public const float SWAP_DURATION = 0.08f;     // 交換需要快速、流暢
-        public const float FALL_DELAY = 0.05f;        // 下落也要快速，保持遊戲節奏
+        public const float FALL_DELAY = 0.03f;        // 下落也要快速，保持遊戲節奏
 
         // 消除相關 - 中等速度
         public const float DESTROY_DELAY = 0.12f;      // 消除前的短暫等待
@@ -618,6 +618,7 @@ namespace Match3Game
         }
         public IEnumerator 落下寶石五()
         {
+            yield return new WaitForSeconds(0.03f);
             bool hasFalling;
             do
             {
@@ -1082,16 +1083,6 @@ namespace Match3Game
             // 玩家觸發的特殊寶石檢查和生成
             if (由玩家觸發生成)
             {
-                //foreach (var group in matchGroups)
-                //{
-                //    Debug.Log($"處理匹配群組，大小: {group.Count}");
-                //    // 輸出群組中寶石的座標
-                //    foreach (var gem in group)
-                //    {
-                //        Debug.Log($"寶石座標: ({gem.x}, {gem.y})");
-                //    }
-                //}
-
                 for (int i = 0; i < matchGroups.Count && i < playerTriggerX.Length; i++)
                 {
                     var group = matchGroups[i].ToList();
@@ -1166,7 +1157,7 @@ namespace Match3Game
 
             yield return StartCoroutine(淡出與刪除寶石(processedGems, processedGemIds));
             yield return new WaitForSeconds(DESTROY_DELAY);
-            yield return StartCoroutine(落下寶石五());
+            //yield return StartCoroutine(落下寶石五());
         }
 
         // 寶石淡出效果的協程
