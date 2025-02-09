@@ -55,7 +55,7 @@ namespace Match3Game
             int resType = gem.id - 100;
             List<Gem> allDestroyedGems = new List<Gem>();
             allDestroyedGems.Add(gem);
-            board.statusText.text = "消除中";
+            //board.statusText.text = "消除中";
 
             特殊寶石組合效果(gem, resType, allDestroyedGems);
 

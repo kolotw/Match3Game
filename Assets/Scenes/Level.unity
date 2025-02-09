@@ -660,8 +660,10 @@ MonoBehaviour:
   - {fileID: 4334207860041640017, guid: b6895930c7df7114d9cfef85c4261c74, type: 3}
   - {fileID: 3804780018175326054, guid: 6ee069ae0345db442921d75396268bd4, type: 3}
   - {fileID: 9063870031162447826, guid: eb115d73b7bb1364bb223debccb63aba, type: 3}
+  currentState: 0
   gem1: {fileID: 0}
   gem2: {fileID: 0}
+  GM: {fileID: 0}
 --- !u!1 &288322194
 GameObject:
   m_ObjectHideFlags: 0
@@ -5287,9 +5289,9 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 2037706537}
+  - {fileID: 258291702}
   - {fileID: 519420032}
   - {fileID: 619394802}
-  - {fileID: 258291702}
   - {fileID: 3941178793286105906}
   - {fileID: 3126736291569189303}
   - {fileID: 8393504120902485025}

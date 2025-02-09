@@ -260,7 +260,7 @@ namespace Match3Game
         {
             var gems = group.ToList();
             var result = new List<List<Gem>>();
-            Debug.Log($"開始處理群組，總寶石數: {gems.Count}");
+            //Debug.Log($"開始處理群組，總寶石數: {gems.Count}");
 
             // 1. 先檢查 T/L 型
             bool hasExtension;
@@ -338,19 +338,19 @@ namespace Match3Game
             ShapeType shapeType;
             if (IsTLShape(gems, out hasExtension, out shapeType))
             {
-                Debug.Log($"確認了{shapeType}型，擴展:{hasExtension}");
+                //Debug.Log($"確認了{shapeType}型，擴展:{hasExtension}");
                 return (hasExtension ? 3 : 2, true, true, gems);
             }
 
             // 最後處理4連線
             if (maxHorizontal == 4)
             {
-                Debug.Log($"確認了水平4連線");
+                //Debug.Log($"確認了水平4連線");
                 return (0, true, false, gems);
             }
             if (maxVertical == 4)
             {
-                Debug.Log($"確認了垂直4連線");
+                //Debug.Log($"確認了垂直4連線");
                 return (1, false, true, gems);
             }
 

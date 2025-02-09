@@ -12,9 +12,11 @@ public class GameManaager : MonoBehaviour
     [SerializeField] public int target = 5;
     [SerializeField] public int round = 30;
     SpecialGemActivator specialGemActivator;
+    Board board;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        board = Board.instance;
         specialGemActivator = new SpecialGemActivator(Board.instance);
         levelText.text = "";
         roundText.text = "Round:" + round;
@@ -44,6 +46,7 @@ public class GameManaager : MonoBehaviour
         targetText.text = "x  " + target;
         if(target == 0)
         {
+            board.changeGameState(GameState.Completed);
             levelText.text = "Level: " + level + " Completed!";
         }
     }
@@ -52,5 +55,10 @@ public class GameManaager : MonoBehaviour
     {
         round--;
         roundText.text = "Round:" + round;
+        if (round == 0)
+        {
+            board.changeGameState(GameState.Completed);
+            levelText.text = "Level: " + level + " Failed!";
+        }
     }
 }

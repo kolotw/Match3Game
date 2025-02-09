@@ -15,7 +15,8 @@ namespace Match3Game
         Swapping,    // 寶石交換中，正在執行交換動畫
         Processing,  // 正在處理寶石消除邏輯
         Filling,     // 正在填充遊戲板的空白位置
-        Resetting    // 遊戲板重置中
+        Resetting,    // 遊戲板重置中
+        Completed    // 遊戲完成狀態，所有關卡已通過或失敗
     }
 
     // Board 類別是遊戲的核心管理類別
@@ -25,6 +26,7 @@ namespace Match3Game
         #region 變數
         // 單例模式：確保遊戲中只有一個遊戲板實例
         public static Board instance; // 靜態實例變數
+
         private readonly object swapLock = new object();
         // 遊戲板的基本配置參數
         public int width = 8;       // 遊戲板寬度（列數）
@@ -49,7 +51,7 @@ namespace Match3Game
         [SerializeField] private GameObject[] resGemPrefabs;    // 特殊資源寶石的預製體
 
         // 遊戲狀態管理的關鍵變數
-        private GameState currentState = GameState.Ready;  // 當前遊戲狀態
+        public GameState currentState = GameState.Ready;  // 當前遊戲狀態
         private bool isSwitching = false;  // 是否正在交換寶石
         public Gem gem1, gem2;  // 當前正在交換的兩個寶石
 
@@ -65,7 +67,7 @@ namespace Match3Game
         private GemFactory gemFactory;        // 寶石工廠
         private MatchFinder matchFinder;      // 匹配查找器
         public SpecialGemActivator specialGemActivator;  // 特殊寶石激活器
-
+        public GameManaager GM;
 
         // 遊戲常數：定義各種動畫和操作的持續時間
         // 基本操作 - 最快速度
@@ -95,12 +97,21 @@ namespace Match3Game
             get => currentState;  // 獲取當前遊戲狀態
             private set  // 私有設置器，確保狀態只能由內部邏輯修改
             {
+                if (currentState == GameState.Completed) { 
+                    return; 
+                }
+
                 currentState = value;
+                Debug.Log($"ChangeState: {currentState}");
+                
                 // 每次狀態改變時，自動更新狀態顯示文字
                 UpdateStatusText();
             }
         }
-
+        public void changeGameState(GameState newState)
+        {
+            CurrentState = newState;
+        }
         // 移動完成狀態的屬性
         // 提供一種簡潔的方式檢查和設置遊戲是否就緒
         public bool hasMoveCompleted
@@ -231,6 +242,7 @@ namespace Match3Game
             // 創建特殊寶石激活器：處理特殊寶石的觸發效果
             // 管理具有特殊能力的寶石的行為
             specialGemActivator = new SpecialGemActivator(this);
+            GM = new GameManaager();
         }
 
         // 初始化遊戲板的主要方法
@@ -1019,7 +1031,7 @@ namespace Match3Game
         // 啟動消除匹配寶石的整體流程
         private void 刪除寶石()
         {
-            statusText.text = "消除中";
+            //statusText.text = "消除中";
             // 使用匹配查找器尋找所有可消除的寶石組
             var matches = matchFinder.FindAllMatches();
 
@@ -1235,6 +1247,7 @@ namespace Match3Game
             // 確保狀態文字組件存在
             if (statusText != null)
             {
+
                 // 使用 switch 表達式根據遊戲狀態設置對應的文字
                 // 為玩家提供清晰的當前遊戲階段提示
                 statusText.text = currentState switch
@@ -1244,6 +1257,7 @@ namespace Match3Game
                     GameState.Processing => "處理中：消除匹配的寶石",     // 正在檢查和消除匹配的寶石
                     GameState.Filling => "填充中：補充新的寶石",         // 正在填充空白位置
                     GameState.Resetting => "重置中：遊戲板恢復初始狀態",  // 遊戲板正在重置
+                    GameState.Completed => "結束囉",                // 遊戲結束
                     _ => "遊戲進行中"                                  // 預設狀態
                 };
             }
