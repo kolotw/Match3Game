@@ -9,7 +9,6 @@ namespace Match3Game
         private Board board;
         private HashSet<Gem> gemsToDestroy = new HashSet<Gem>();
         public bool isProcessingEffect { get; private set; }
-
         public SpecialGemActivator(Board board)
         {
             this.board = board;
@@ -69,7 +68,7 @@ namespace Match3Game
                 .ToList();
 
             // 等待一小段時間確保所有效果完成
-            yield return new WaitForSeconds(Board.DESTROY_DELAY);
+            yield return new WaitForSeconds(Board.GameTiming.DESTROY_DELAY);
 
             // 遞迴處理其他特殊寶石
             foreach (var specialGem in specialGems)
@@ -99,8 +98,6 @@ namespace Match3Game
             bool isOnBoard = board.gems[x, y] == gem;
             return isValidPosition;
         }
-
-        
         List<Gem> lineV(List<Gem> allDestroyedGems, Gem gem)
         {
             for (int y = 0; y < board.height; y++)
@@ -269,7 +266,6 @@ namespace Match3Game
                     break;
             }
         }
-
         public void 收集要被消除的寶石(HashSet<Gem> gems)
         {
             if (gems == null || gems.Count == 0) return;
@@ -302,10 +298,10 @@ namespace Match3Game
             // 執行淡出動畫
             float alpha = 1f;
             float elapsed = 0f;
-            while (elapsed < Board.FADE_DELAY)
+            while (elapsed < Board.GameTiming.FADE_DELAY)
             {
                 elapsed += Time.deltaTime;
-                alpha = 1 - (elapsed / Board.FADE_DELAY);
+                alpha = 1 - (elapsed / Board.GameTiming.FADE_DELAY);
 
                 foreach (var gem in gemsToDestroy)
                 {
@@ -337,7 +333,7 @@ namespace Match3Game
                     if (gem.id == 103)
                     {
                         Debug.Log($"刪特殊★ID:{gem.id} ({gem.x}, {gem.y})");
-                        GameObject.Find("/00GameMaster").GetComponent<GameManaager>().UpdateTarget();
+                        GameObject.Find("/00GameMaster").GetComponent<GameManager>().UpdateTarget();
                     }
 
                     if (gem.gameObject != null)

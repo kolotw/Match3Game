@@ -16,6 +16,6 @@ public class UI_Controller : MonoBehaviour
 
         // 딩쩤ヶ턵헕을㉵τ
         startButton.clicked += () => { SceneManager.LoadScene("Level"); };
-        mapButton.clicked += () => { SceneManager.LoadScene("Level"); };
+        mapButton.clicked += () => { SceneManager.LoadScene("Map"); };
     }
 }

@@ -1,6 +1,4 @@
 using Match3Game;
-using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,10 +6,11 @@ public class ButtonActions : MonoBehaviour
 {
     Board board;
     SpecialGemActivator specialGemActivator;
-
+    LevelMapManager levelManager;
     void Start()
     {
         board = Board.instance;
+        levelManager = LevelMapManager.instance;
         specialGemActivator = new SpecialGemActivator(Board.instance);
     }
     private void OnMouseUpAsButton()
@@ -20,12 +19,24 @@ public class ButtonActions : MonoBehaviour
         {
             if(board.currentState == GameState.Completed)
             {
-                SceneManager.LoadScene("MainMenu");
+                if (gameObject.name == "BTN_Next")
+                {
+                    levelManager.Level++;
+                    SceneManager.LoadScene("Level");
+                }
+                else
+                {
+                    SceneManager.LoadScene("MainMenu");
+                }                
             }
-            board.changeGameState(GameState.Ready);
-            Gem gem = Board.instance.gems[0, 0];
-            gem.id = 106;
-            specialGemActivator.±Ò°Ê¯S®íÄ_¥Û(gem);
+            else
+            {
+                board.changeGameState(GameState.Ready);
+                Gem gem = Board.instance.gems[0, 0];
+                gem.id = 106;
+                specialGemActivator.±Ò°Ê¯S®íÄ_¥Û(gem);
+            }
+            
         }        
     }
 }
