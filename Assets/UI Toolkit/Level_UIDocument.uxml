@@ -1,7 +1,13 @@
 <engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <engine:VisualElement name="VE0" style="flex-grow: 1;">
         <engine:VisualElement name="VE_T" style="flex-grow: 1;" />
-        <engine:VisualElement name="VE_C_Board" style="flex-grow: 1;" />
+        <engine:VisualElement name="VE_C_Board" style="flex-grow: 1; flex-direction: row;">
+            <engine:VisualElement name="VE_C_SPL" style="flex-grow: 1;" />
+            <engine:VisualElement name="VE_C_Main" style="flex-grow: 1;">
+                <engine:VisualElement name="VE_C_Main_BG" style="flex-grow: 1; flex-shrink: 0; background-image: url(&quot;project://database/Assets/Download/UI/small/tile_0006.png?fileID=-3538523377408153532&amp;guid=17fa635cb8eab1642a7cb069a841aeda&amp;type=3#tile_0006_0&quot;);" />
+            </engine:VisualElement>
+            <engine:VisualElement name="VE_C_SPR" style="flex-grow: 1;" />
+        </engine:VisualElement>
         <engine:VisualElement name="VE_Bottom" style="flex-grow: 1;" />
     </engine:VisualElement>
 </engine:UXML>

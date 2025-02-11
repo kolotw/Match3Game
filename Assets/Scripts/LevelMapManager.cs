@@ -3,11 +3,12 @@ using UnityEngine;
 public class LevelMapManager : MonoBehaviour
 {
     public static LevelMapManager instance; // ¿R∫AπÍ®“≈‹º∆
-    public int Level = 0;
+    public int Level = 1;
 
     private void Awake()
     {
         instance = this;
+        Level = 1;
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()

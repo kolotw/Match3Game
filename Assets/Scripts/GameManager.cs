@@ -1,16 +1,21 @@
 using UnityEngine;
 using TMPro;
 using Match3Game;
+using System;
+using System.Linq;
+using NUnit.Framework;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
     #region UI References
-    [SerializeField] public TextMeshPro levelText;
+    [SerializeField] public TextMeshPro resultText;
     [SerializeField] public TextMeshPro targetText;
     [SerializeField] public TextMeshPro roundText;
     [SerializeField] public TextMeshPro statusText;
     [SerializeField] public TextMeshPro gemsText;
     [SerializeField] public TextMeshPro resolutionText;
+    [SerializeField] public TextMeshPro levelText;
     [SerializeField] public GameObject resultPanel;
     #endregion
 
@@ -23,6 +28,8 @@ public class GameManager : MonoBehaviour
     private SpecialGemActivator specialGemActivator;
     private LevelMapManager LevelManager;
     #endregion
+
+    private List<GameObject> nowPrefabs = new List<GameObject> { };
 
     private void Start()
     {
@@ -44,7 +51,12 @@ public class GameManager : MonoBehaviour
             int height = Screen.height;
             resolutionText.text = $"{width}x{height}";
         }
-        
+        if (levelText != null)
+        {
+            currentLevel = LevelManager.Level;
+            levelText.text = "Lv." + currentLevel;
+            nowPrefabs = null;
+        }
     }
 
     #region UI Update Methods
@@ -74,14 +86,14 @@ public class GameManager : MonoBehaviour
 
     private void UpdateUIElements()
     {
-       // if (levelText != null) levelText.text = $"Level: {currentLevel}";
+       // if (resultText != null) resultText.text = $"Level: {currentLevel}";
         if (roundText != null) roundText.text = $"Round: {round}";
         if (targetText != null) targetText.text = $"x {target}";
-        if (levelText != null)
-        {
-            currentLevel = LevelManager.Level;
-            levelText.text = "";
+        if (resultText != null)
+        {            
+            resultText.text = "";
         }
+        
         if (resultPanel != null) resultPanel.SetActive(false);
     }
 
@@ -109,15 +121,17 @@ public class GameManager : MonoBehaviour
     {
         LevelManager.Level++;
         currentLevel = LevelManager.Level;
-        if (levelText != null)
+        if (resultText != null)
         {
-            levelText.text = $"Level: {currentLevel}";
+            resultText.text = $"Level: {currentLevel}";
         }
     }
 
     public void UpdateTarget()
     {
         target--;
+        if (target < 0) target = 0 ;
+
         if (targetText != null)
         {
             targetText.text = $"x {target}";
@@ -128,16 +142,16 @@ public class GameManager : MonoBehaviour
             board.changeGameState(GameState.Completed);
             resultPanel.SetActive(true);
 
-            if (levelText != null)
+            if (resultText != null)
             {
-                levelText.text = $"Level: {currentLevel} Completed!";
+                resultText.text = $"Level: {currentLevel} Completed!";
             }
         }
     }
 
     public void updateRound()
     {
-        if (board.currentState == GameState.Completed) return;
+        //if (board.currentState == GameState.Completed) return;
         round--;
         if (roundText != null)
         {
@@ -147,10 +161,8 @@ public class GameManager : MonoBehaviour
         if (round == 0)
         {
             board.changeGameState(GameState.Completed);
-            if (levelText != null)
-            {
-                levelText.text = $"Level: {currentLevel} Failed!";
-            }
+            resultPanel.SetActive(true);
+            resultText.text = $"Level: {currentLevel} Failed!";
         }
     }
     #endregion

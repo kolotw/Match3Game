@@ -241,9 +241,7 @@ namespace Match3Game
         // 創建支持遊戲運行的各種輔助類別
         private void InitializeComponents()
         {
-            // 創建寶石工廠：負責生成和管理遊戲板上的寶石
-            // 使用預製體數組作為寶石模板
-            gemFactory = new GemFactory(this, gemPrefabs);
+            
 
             // 創建匹配查找器：檢測遊戲板上的寶石匹配
             // 負責識別可以消除的寶石組合
@@ -274,26 +272,44 @@ namespace Match3Game
 
         // 設置遊戲板的具體方法
         // 在遊戲開始時為每個格子生成寶石
-        void SetupBoard()
+        public void SetupBoard()
         {
-            // 遍歷遊戲板的每一個格子
-            // 使用巢狀迴圈覆蓋整個遊戲板
+            Debug.Log(LevelMapManager.instance.Level);
+            int prefabCount;
+
+            switch (LevelMapManager.instance.Level)
+            {
+                case 1: prefabCount = 3; break;
+                case 2: prefabCount = 4; break;
+                case 3: prefabCount = 5; break;
+                case 4: prefabCount = 6; break;
+                case 5: prefabCount = 7; break;
+                case 6: prefabCount = 8; break;
+                case 7: prefabCount = 9; break;
+                default: prefabCount = 3; break;
+            }
+
+            GameObject[] nowPrefab = new GameObject[prefabCount];
+            for (int i = 0; i < prefabCount; i++)
+            {
+                nowPrefab[i] = gemPrefabs[i];
+            }
+
+            gemPrefabs = nowPrefab;
+
+            // 創建寶石工廠：負責生成和管理遊戲板上的寶石
+            // 使用預製體數組作為寶石模板
+            gemFactory = new GemFactory(this, gemPrefabs);
+
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    // 在每個位置使用寶石工廠創建寶石
-                    // 確保遊戲板被完全填滿且無初始匹配
                     gemFactory.CreateGem(x, y);
                 }
             }
 
-            // 將遊戲狀態設置為就緒
-            // 表示遊戲板已準備好，玩家可以開始遊戲
             CurrentState = GameState.Ready;
-
-            // 重置匹配預測計時器
-            // 開始監控可能的寶石匹配
             matchPredictor?.ResetPredictionTimer();
         }
         // Update 方法：每幀調用一次

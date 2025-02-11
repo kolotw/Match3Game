@@ -10,9 +10,8 @@ namespace Match3Game
         public GemFactory(Board board, GameObject[] gemPrefabs)
         {
             this.board = board;
-            this.gemPrefabs = gemPrefabs;
+            this.gemPrefabs = board.gemPrefabs;
         }
-
         public void CreateGem(int x, int y)
         {
             int gemId = Random.Range(0, gemPrefabs.Length);

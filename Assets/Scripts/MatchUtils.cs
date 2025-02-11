@@ -327,7 +327,7 @@ namespace Match3Game
                 Debug.Log($"確認了水平5連線");
                 return (3, true, false, gems);
             }
-            if (maxVertical >= 5)
+            else if (maxVertical >= 5)
             {
                 Debug.Log($"確認了垂直5連線");
                 return (3, false, true, gems);
