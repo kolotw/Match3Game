@@ -274,10 +274,10 @@ namespace Match3Game
         // 在遊戲開始時為每個格子生成寶石
         public void SetupBoard()
         {
-            Debug.Log(LevelMapManager.instance.Level);
+            //Debug.Log(LevelMapManager.instance.Level);
             int prefabCount;
 
-            switch (LevelMapManager.instance.Level)
+            switch (LevelManager.Instance.Level)
             {
                 case 1: prefabCount = 3; break;
                 case 2: prefabCount = 4; break;

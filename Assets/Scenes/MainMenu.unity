@@ -128,7 +128,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 431229072}
-  - component: {fileID: 431229071}
+  - component: {fileID: 431229073}
   m_Layer: 0
   m_Name: 00LevelManager
   m_TagString: Untagged
@@ -136,18 +136,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &431229071
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 431229070}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67b2f79d8f5927c47b78a4060c2411f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &431229072
 Transform:
   m_ObjectHideFlags: 0
@@ -163,6 +151,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &431229073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 431229070}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e877b4d52aecb54384da8122a7190ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  nextLevelColor: {r: 1, g: 0, b: 0, a: 1}
+  unlockedColor: {r: 1, g: 1, b: 1, a: 1}
+  targetLayer:
+    serializedVersion: 2
+    m_Bits: 73
+  currentLevel: 0
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -556,12 +563,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbc3bc2bb24362a429797ef2fdec094d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  levelText: {fileID: 0}
+  resultText: {fileID: 0}
   targetText: {fileID: 0}
   roundText: {fileID: 0}
   statusText: {fileID: 0}
   gemsText: {fileID: 0}
   resolutionText: {fileID: 0}
+  levelText: {fileID: 0}
+  buttonText: {fileID: 0}
+  resultPanel: {fileID: 0}
   currentLevel: 1
   target: 5
   round: 30

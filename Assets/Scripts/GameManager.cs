@@ -8,6 +8,7 @@ using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
+    public static GameManager instance;
     #region UI References
     [SerializeField] public TextMeshPro resultText;
     [SerializeField] public TextMeshPro targetText;
@@ -16,20 +17,19 @@ public class GameManager : MonoBehaviour
     [SerializeField] public TextMeshPro gemsText;
     [SerializeField] public TextMeshPro resolutionText;
     [SerializeField] public TextMeshPro levelText;
+    [SerializeField] public TextMeshPro buttonText;
     [SerializeField] public GameObject resultPanel;
     #endregion
 
     #region Game State
-    [SerializeField] public int currentLevel = 1;
+    [SerializeField] private int currentLevel = 1;
     [SerializeField] public int target = 5;
     [SerializeField] public int round = 30;
 
     private Board board;
     private SpecialGemActivator specialGemActivator;
-    private LevelMapManager LevelManager;
+    //private LevelMapManager LevelManager;
     #endregion
-
-    private List<GameObject> nowPrefabs = new List<GameObject> { };
 
     private void Start()
     {
@@ -40,9 +40,10 @@ public class GameManager : MonoBehaviour
 
     private void InitializeComponents()
     {
+        instance = this;
         board = Board.instance;
         specialGemActivator = new SpecialGemActivator(board);
-        LevelManager = LevelMapManager.instance;
+        currentLevel = LevelManager.Instance.Level;
 
         // 初始化解析度顯示
         if (resolutionText != null)
@@ -52,10 +53,8 @@ public class GameManager : MonoBehaviour
             resolutionText.text = $"{width}x{height}";
         }
         if (levelText != null)
-        {
-            currentLevel = LevelManager.Level;
+        {            
             levelText.text = "Lv." + currentLevel;
-            nowPrefabs = null;
         }
     }
 
@@ -86,7 +85,6 @@ public class GameManager : MonoBehaviour
 
     private void UpdateUIElements()
     {
-       // if (resultText != null) resultText.text = $"Level: {currentLevel}";
         if (roundText != null) roundText.text = $"Round: {round}";
         if (targetText != null) targetText.text = $"x {target}";
         if (resultText != null)
@@ -119,8 +117,8 @@ public class GameManager : MonoBehaviour
     #region Game Progress Methods
     public void UpdateLevel()
     {
-        LevelManager.Level++;
-        currentLevel = LevelManager.Level;
+        LevelManager.Instance.Level++;
+        currentLevel = LevelManager.Instance.Level;
         if (resultText != null)
         {
             resultText.text = $"Level: {currentLevel}";
@@ -145,6 +143,8 @@ public class GameManager : MonoBehaviour
             if (resultText != null)
             {
                 resultText.text = $"Level: {currentLevel} Completed!";
+                buttonText.text = "Next";
+                LevelManager.Instance.Level = currentLevel;
             }
         }
     }
@@ -163,6 +163,7 @@ public class GameManager : MonoBehaviour
             board.changeGameState(GameState.Completed);
             resultPanel.SetActive(true);
             resultText.text = $"Level: {currentLevel} Failed!";
+            buttonText.text = "Back";
         }
     }
     #endregion

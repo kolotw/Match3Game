@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 9059064876444594738}
   m_Layer: 0
   m_Name: Res_LineV
-  m_TagString: Untagged
+  m_TagString: gews
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
