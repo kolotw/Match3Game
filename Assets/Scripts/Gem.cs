@@ -78,7 +78,7 @@ namespace Match3Game
                 }
             }
 
-            GameObject.Find("/00GameMaster").GetComponent<GameManager>().updateRound();
+            //GameObject.Find("/00GameMaster").GetComponent<GameManager>().updateRound();
 
         }
         private void OnMouseOver()

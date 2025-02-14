@@ -165,7 +165,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   nextLevelColor: {r: 1, g: 0, b: 0, a: 1}
-  unlockedColor: {r: 1, g: 1, b: 1, a: 1}
+  unlockedColor: {r: 0, g: 0.5021024, b: 1, a: 1}
   targetLayer:
     serializedVersion: 2
     m_Bits: 73

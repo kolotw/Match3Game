@@ -15,8 +15,13 @@ public class UI_Controller : MonoBehaviour
         Button mapButton = root.Q<Button>("But_Map");
 
         // 딩쩤ヶ턵헕을㉵τ
-        if(LevelManager.Instance.Level==0) LevelManager.Instance.Level=1;
-        startButton.clicked += () => { SceneManager.LoadScene("Level"); };
+        if (LevelManager.Instance.Level == 0)
+        {
+            LevelManager.Instance.Level = 1;
+        }
+        startButton.clicked += () => {
+            //LevelManager.Instance.ResetProgress();
+            SceneManager.LoadScene("Level"); };
         mapButton.clicked += () => { SceneManager.LoadScene("Map"); };
     }
 }

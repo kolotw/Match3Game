@@ -34,8 +34,7 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         InitializeComponents();
-        UpdateUIElements();
-        
+        UpdateUIElements();        
     }
 
     private void InitializeComponents()
@@ -151,7 +150,7 @@ public class GameManager : MonoBehaviour
 
     public void updateRound()
     {
-        //if (board.currentState == GameState.Completed) return;
+        if (board.currentState == GameState.Completed) return;
         round--;
         if (roundText != null)
         {

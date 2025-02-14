@@ -31,7 +31,7 @@ public class LevelManager : MonoBehaviour
     [Header("UI 設置")]
     [SerializeField] private Color lockedColor = Color.gray;
     [SerializeField] private Color nextLevelColor = Color.red;
-    [SerializeField] private Color unlockedColor = Color.white;
+    [SerializeField] private Color unlockedColor = new Color(0, 0.4f,1);
     [SerializeField] private LayerMask targetLayer = 3;
     #endregion
 
@@ -75,7 +75,24 @@ public class LevelManager : MonoBehaviour
         InitializeMapIcons();
         UpdateMapIconsVisuals();
     }
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
 
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == "Map")  // 確保只在 Map 場景執行
+        {
+            InitializeReferences();
+            InitializeMapIcons();
+            UpdateMapIconsVisuals();
+        }
+    }
     private void Update()
     {
         if (Input.GetMouseButtonDown(0))
@@ -130,22 +147,24 @@ public class LevelManager : MonoBehaviour
     #region UI更新
     private void UpdateMapIconsVisuals()
     {
-        foreach (var iconPair in mapIcons)
-        {
-            if (int.TryParse(iconPair.Key, out int iconLevel))
+        try {
+            foreach (var iconPair in mapIcons)
             {
-                Color targetColor = GetIconColor(iconLevel, currentLevel);
-                iconPair.Value.color = targetColor;
+                if (int.TryParse(iconPair.Key, out int iconLevel))
+                {
+                    Color targetColor = GetIconColor(iconLevel, currentLevel);
+                    iconPair.Value.color = targetColor;
+                }
             }
-        }
+        } catch { }        
     }
 
     private Color GetIconColor(int iconLevel, int currentLevel)
     {
         if (iconLevel <= currentLevel)
             return unlockedColor;
-        if (iconLevel == currentLevel + 1)
-            return nextLevelColor;
+        //if (iconLevel == currentLevel + 1)
+        //    return nextLevelColor;
         return lockedColor;
     }
     #endregion
@@ -177,7 +196,8 @@ public class LevelManager : MonoBehaviour
                 {
                     SaveLevel();
                     UnlockNextLevel();
-                    LoadLevel();
+                    //LoadLevel();
+                    SceneManager.LoadScene("Map");
                 }
                 else if (nextLevelText.text == "Back")
                 {
@@ -225,22 +245,6 @@ public class LevelManager : MonoBehaviour
     public void UnlockNextLevel()
     {
         Level++;
-    }
-
-    public bool IsLevelUnlocked(int level)
-    {
-        return level <= currentLevel;
-    }
-
-    public void ResetProgress()
-    {
-        Level = 0;
-    }
-
-    public void RefreshMapIcons()
-    {
-        InitializeMapIcons();
-        UpdateMapIconsVisuals();
     }
     #endregion
 }

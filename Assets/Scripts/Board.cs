@@ -241,8 +241,6 @@ namespace Match3Game
         // 創建支持遊戲運行的各種輔助類別
         private void InitializeComponents()
         {
-            
-
             // 創建匹配查找器：檢測遊戲板上的寶石匹配
             // 負責識別可以消除的寶石組合
             matchFinder = new MatchFinder(this);
@@ -606,12 +604,12 @@ namespace Match3Game
 
                 CurrentState = GameState.Processing;
 
-                bool hasValidMatch = false;
                 bool hasSpecialGem = swappedGem1?.id >= 100 || swappedGem2?.id >= 100;
 
                 // 玩家操作時的處理順序
                 if (由玩家觸發生成)
                 {
+                    GameObject.Find("/00GameMaster").GetComponent<GameManager>().updateRound();
                     Gem specialGem = swappedGem1?.id >= 100 ? swappedGem1 : swappedGem2;
                     Gem normalGem = swappedGem1?.id >= 100 ? swappedGem2 : swappedGem1;
 
@@ -625,7 +623,6 @@ namespace Match3Game
                             swappedGem1.id = resultType;
                             specialGemActivator.啟動特殊寶石(swappedGem1);
                             swappedGem1.id = originalId1;
-                            hasValidMatch = true;
                             return; // 提前返回，讓特殊寶石處理流程接管
                         }
                     }
@@ -666,7 +663,6 @@ namespace Match3Game
                                     }
 
                                     生成特殊寶石(normalGem.x, normalGem.y, resourceType);
-                                    hasValidMatch = true;
 
                                     // 如果有特殊寶石需要啟動，讓它接管後續流程
                                     if (specialGem != null)
@@ -682,7 +678,6 @@ namespace Match3Game
                         if (specialGem != null)
                         {
                             specialGemActivator.啟動特殊寶石(specialGem);
-                            hasValidMatch = true;
                             return;
                         }
 
@@ -714,7 +709,6 @@ namespace Match3Game
                                 }
                             }
                             StartCoroutine(處理消除序列一());
-                            hasValidMatch = true;
                         }
                     }
                 }
@@ -732,7 +726,6 @@ namespace Match3Game
                             }
                         }
                         StartCoroutine(處理消除序列一());
-                        hasValidMatch = true;
                     }
                 }
             }
