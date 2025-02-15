@@ -168,7 +168,7 @@ MonoBehaviour:
   unlockedColor: {r: 0, g: 0.5021024, b: 1, a: 1}
   targetLayer:
     serializedVersion: 2
-    m_Bits: 73
+    m_Bits: 72
   currentLevel: 0
 --- !u!1 &519420028
 GameObject:
@@ -575,6 +575,9 @@ MonoBehaviour:
   currentLevel: 1
   target: 5
   round: 30
+  targetPrefab: []
+  targetTop: {fileID: 0}
+  targetID: 103
 --- !u!4 &1703566390
 Transform:
   m_ObjectHideFlags: 0

@@ -19,9 +19,7 @@ public class UI_Controller : MonoBehaviour
         {
             LevelManager.Instance.Level = 1;
         }
-        startButton.clicked += () => {
-            //LevelManager.Instance.ResetProgress();
-            SceneManager.LoadScene("Level"); };
-        mapButton.clicked += () => { SceneManager.LoadScene("Map"); };
+        startButton.clicked += () => { LevelManager.Instance.LoadLevel(); };
+        mapButton.clicked += () => { LevelManager.Instance.LoadMap(); };
     }
 }

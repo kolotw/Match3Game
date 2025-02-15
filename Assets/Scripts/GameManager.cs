@@ -25,6 +25,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int currentLevel = 1;
     [SerializeField] public int target = 5;
     [SerializeField] public int round = 30;
+    [SerializeField] private GameObject[] targetPrefab;
+    [SerializeField] private GameObject targetTop;
+    [SerializeField] public int targetID = 103;
 
     private Board board;
     private SpecialGemActivator specialGemActivator;
@@ -34,7 +37,8 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         InitializeComponents();
-        UpdateUIElements();        
+        UpdateUIElements();
+        setGameLevelTarget();
     }
 
     private void InitializeComponents()
@@ -94,6 +98,59 @@ public class GameManager : MonoBehaviour
         if (resultPanel != null) resultPanel.SetActive(false);
     }
 
+    private void setGameLevelTarget()
+    {
+        if (targetPrefab.Length <= 0) return;
+        targetTop = GameObject.Find("/TargetTop");
+        switch (currentLevel)
+        {
+            case 1:
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[0].GetComponent<SpriteRenderer>().sprite;
+                targetTop.transform.localScale = Vector3.one;
+                targetID = int.Parse(targetPrefab[0].name);
+                round = 30;
+                break;
+            case 2:
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[1].GetComponent<SpriteRenderer>().sprite;
+                targetTop.transform.localScale = Vector3.one;
+                targetID = int.Parse(targetPrefab[1].name);
+                round = 30; 
+                break;
+            case 3:
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[2].GetComponent<SpriteRenderer>().sprite;
+                targetTop.transform.localScale = Vector3.one;
+                targetID = int.Parse(targetPrefab[2].name);
+                round = 50; 
+                break;
+            case 4:
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[3].GetComponent<SpriteRenderer>().sprite;                
+                targetID = int.Parse(targetPrefab[3].name);
+                round = 70; 
+                break;
+            case 5:
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[3].GetComponent<SpriteRenderer>().sprite;
+                targetID = int.Parse(targetPrefab[3].name);
+                round = 100; 
+                break;
+            case 6:
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[3].GetComponent<SpriteRenderer>().sprite;
+                targetID = int.Parse(targetPrefab[3].name);
+                round = 120; 
+                break;
+            case 7:
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[3].GetComponent<SpriteRenderer>().sprite;
+                targetID = int.Parse(targetPrefab[3].name);
+                round = 150; 
+                break;
+            default:
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[0].GetComponent<SpriteRenderer>().sprite;
+                targetTop.transform.localScale = Vector3.one;
+                targetID = int.Parse(targetPrefab[0].name);
+                round = 50; 
+                break;
+        }
+        roundText.text = "Round: " + round.ToString();
+    }
     public void ShowMessage(string message, float duration = 2f)
     {
         if (statusText != null)

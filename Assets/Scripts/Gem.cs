@@ -10,14 +10,14 @@ namespace Match3Game
         public int x, y;
         public bool isMatched = false;
         public bool isAnimating = false;
+        
+        private float pressStartTime;
 
         private Vector2 dragStart;
         private bool isDragging = false;
         private const float DRAG_THRESHOLD = 0.3f;
         private const float MIN_DRAG_DISTANCE = 0.1f;
-
         private bool IsResourceGem => id >= 100;
-
         public void Init(int gemId, int posX, int posY)
         {
             id = gemId;
@@ -59,24 +59,39 @@ namespace Match3Game
             if (isAnimating || !Board.instance.hasMoveCompleted ||
                 Board.instance == null) return;
 
+            pressStartTime = Time.time;
+
             dragStart = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             isDragging = true;
         }
 
         private void OnMouseUp()
         {
-            isDragging = false;
-            
-            // 檢查是否為特殊寶石且滑鼠點擊位置沒有明顯移動
-            if (IsResourceGem &&
-                Vector2.Distance(dragStart, Camera.main.ScreenToWorldPoint(Input.mousePosition)) < MIN_DRAG_DISTANCE)
+            float pressDuration = Time.time - pressStartTime;
+
+            if (pressDuration >= 1f)
             {
-                // 使用 Board 實例中的 specialGemActivator
-                if (Board.instance != null && Board.instance.specialGemActivator != null)
+                // 長按事件
+                List<Gem> desGem = new List<Gem>();
+                desGem.Add(this);
+                StartCoroutine(Board.instance.刪除寶石序列三(desGem));
+            }
+            else
+            {
+                isDragging = false;
+
+                // 檢查是否為特殊寶石且滑鼠點擊位置沒有明顯移動
+                if (IsResourceGem &&
+                    Vector2.Distance(dragStart, Camera.main.ScreenToWorldPoint(Input.mousePosition)) < MIN_DRAG_DISTANCE)
                 {
-                    Board.instance.specialGemActivator.啟動特殊寶石(this);
+                    // 使用 Board 實例中的 specialGemActivator
+                    if (Board.instance != null && Board.instance.specialGemActivator != null)
+                    {
+                        Board.instance.specialGemActivator.啟動特殊寶石(this);
+                    }
                 }
             }
+                
 
             //GameObject.Find("/00GameMaster").GetComponent<GameManager>().updateRound();
 

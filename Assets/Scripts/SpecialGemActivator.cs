@@ -330,7 +330,7 @@ namespace Match3Game
                 if (gem != null)
                 {
                     // 關卡目標 
-                    if (gem.id == 103)
+                    if (gem.id == GameManager.instance.targetID)
                     {
                         Debug.Log($"刪特殊★ID:{gem.id} ({gem.x}, {gem.y})");
                         GameObject.Find("/00GameMaster").GetComponent<GameManager>().UpdateTarget();

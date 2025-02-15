@@ -1383,7 +1383,7 @@ GameObject:
   - component: {fileID: 465432336}
   - component: {fileID: 465432335}
   - component: {fileID: 465432337}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: X_Close
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5885,7 +5885,7 @@ GameObject:
   - component: {fileID: 1921668261}
   - component: {fileID: 1921668260}
   m_Layer: 0
-  m_Name: koloFigure_pose03sc_0
+  m_Name: TargetTop
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6308,6 +6308,12 @@ MonoBehaviour:
   currentLevel: 1
   target: 5
   round: 30
+  targetPrefab:
+  - {fileID: 8466207186695394168, guid: 5c7624df17977be45924a5c9ad1e81d0, type: 3}
+  - {fileID: 4334207860041640017, guid: b6895930c7df7114d9cfef85c4261c74, type: 3}
+  - {fileID: 3804780018175326054, guid: 6ee069ae0345db442921d75396268bd4, type: 3}
+  - {fileID: 9063870031162447826, guid: eb115d73b7bb1364bb223debccb63aba, type: 3}
+  targetTop: {fileID: 1921668259}
 --- !u!4 &2037706537
 Transform:
   m_ObjectHideFlags: 0

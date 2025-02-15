@@ -39,7 +39,6 @@ public class LevelManager : MonoBehaviour
     private const string LEVEL_KEY = "CurrentLevel";
     private Dictionary<string, SpriteRenderer> mapIcons = new Dictionary<string, SpriteRenderer>();
     private TextMeshPro nextLevelText;
-    private Sprite levelCompletedSprite;
     #endregion
 
     #region 公開屬性
@@ -107,8 +106,7 @@ public class LevelManager : MonoBehaviour
     {
         try
         {
-            nextLevelText = GameObject.Find("Result_Panel/BTN_Next/Text (TMP)")?.GetComponent<TextMeshPro>();
-            levelCompletedSprite = GameObject.Find("LevelCompleted")?.GetComponent<SpriteRenderer>()?.sprite;
+            nextLevelText = GameObject.Find("Result_Panel/BTN_Next/Text (TMP)")?.GetComponent<TextMeshPro>();            
         }
         catch (Exception e)
         {
@@ -131,11 +129,7 @@ public class LevelManager : MonoBehaviour
     #endregion
 
     #region 存檔相關
-    private void LoadLevel()
-    {
-        currentLevel = PlayerPrefs.GetInt(LEVEL_KEY, 0);
-        SceneManager.LoadScene("Level");
-    }
+    
 
     private void SaveLevel()
     {
@@ -173,7 +167,7 @@ public class LevelManager : MonoBehaviour
     private void HandleMouseClick()
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Collider2D hit = Physics2D.OverlapPoint(mousePos);
+        Collider2D hit = Physics2D.OverlapPoint(mousePos, targetLayer);
         
         if (hit == null) return;
         Debug.Log($"hit name: {hit.name}");
@@ -245,6 +239,15 @@ public class LevelManager : MonoBehaviour
     public void UnlockNextLevel()
     {
         Level++;
+    }
+    public void LoadLevel()
+    {
+        currentLevel = PlayerPrefs.GetInt(LEVEL_KEY, 0);
+        SceneManager.LoadScene("Level");
+    }
+    public void LoadMap()
+    {
+        SceneManager.LoadScene("Map");
     }
     #endregion
 }
