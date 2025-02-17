@@ -108,44 +108,63 @@ public class GameManager : MonoBehaviour
                 targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[0].GetComponent<SpriteRenderer>().sprite;
                 targetTop.transform.localScale = Vector3.one;
                 targetID = int.Parse(targetPrefab[0].name);
+                target = 1;
+                targetText.text = $"x {target}";
                 round = 30;
                 break;
             case 2:
-                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[1].GetComponent<SpriteRenderer>().sprite;
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[0].GetComponent<SpriteRenderer>().sprite;
                 targetTop.transform.localScale = Vector3.one;
-                targetID = int.Parse(targetPrefab[1].name);
+                targetID = int.Parse(targetPrefab[0].name);
+                target = 3;
+                targetText.text = $"x {target}";
                 round = 30; 
                 break;
             case 3:
-                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[2].GetComponent<SpriteRenderer>().sprite;
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[1].GetComponent<SpriteRenderer>().sprite;
                 targetTop.transform.localScale = Vector3.one;
-                targetID = int.Parse(targetPrefab[2].name);
+                targetID = int.Parse(targetPrefab[1].name);
+                target = 3;
+                targetText.text = $"x {target}";
                 round = 50; 
                 break;
             case 4:
-                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[3].GetComponent<SpriteRenderer>().sprite;                
-                targetID = int.Parse(targetPrefab[3].name);
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[1].GetComponent<SpriteRenderer>().sprite;
+                targetTop.transform.localScale = Vector3.one; 
+                targetID = int.Parse(targetPrefab[1].name);
+                target = 3;
+                targetText.text = $"x {target}";
                 round = 70; 
                 break;
             case 5:
-                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[3].GetComponent<SpriteRenderer>().sprite;
-                targetID = int.Parse(targetPrefab[3].name);
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[2].GetComponent<SpriteRenderer>().sprite;
+                targetTop.transform.localScale = Vector3.one; 
+                targetID = int.Parse(targetPrefab[2].name);
+                target = 1;
+                targetText.text = $"x {target}";
                 round = 100; 
                 break;
             case 6:
-                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[3].GetComponent<SpriteRenderer>().sprite;
-                targetID = int.Parse(targetPrefab[3].name);
+                targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[2].GetComponent<SpriteRenderer>().sprite;
+                targetTop.transform.localScale = Vector3.one;
+                targetID = int.Parse(targetPrefab[2].name);
+                target = 2  ;
+                targetText.text = $"x {target}";
                 round = 120; 
                 break;
             case 7:
                 targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[3].GetComponent<SpriteRenderer>().sprite;
                 targetID = int.Parse(targetPrefab[3].name);
+                target = 2;
+                targetText.text = $"x {target}";
                 round = 150; 
                 break;
             default:
                 targetTop.GetComponent<SpriteRenderer>().sprite = targetPrefab[0].GetComponent<SpriteRenderer>().sprite;
                 targetTop.transform.localScale = Vector3.one;
                 targetID = int.Parse(targetPrefab[0].name);
+                target = 1;
+                targetText.text = $"x {target}";
                 round = 50; 
                 break;
         }
